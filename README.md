@@ -100,6 +100,23 @@ curl -X POST http://localhost:3000/v1/blobs \
 curl http://localhost:3000/v1/blobs/hello -H "Authorization: Bearer dev-token"
 ```
 
+## Frontend
+
+A React SPA (Vite + shadcn/ui) in `frontend/` for storing and browsing blobs
+from the browser:
+
+```sh
+cd frontend
+npm install
+npm run dev   # http://localhost:5173, expects the API on http://localhost:3000
+```
+
+Set the API token in the header (development default: `dev-token`). Each row
+shows the blob's storage key — the SHA-256 of its id rendered as a color band —
+which matches the object's name in the storage backend (e.g. the folder you
+see in the MinIO object browser). `VITE_API_URL` and `VITE_MINIO_CONSOLE`
+override the API and MinIO console locations.
+
 ## Tests
 
 ```sh
