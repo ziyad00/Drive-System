@@ -1,10 +1,11 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  namespace :v1 do
+    # Blob ids are arbitrary strings and may contain slashes or dots, so the
+    # id segment greedily matches everything after /v1/blobs/.
+    resources :blobs, only: %i[create show], param: :id,
+                      constraints: { id: /.+/ }, format: false
+  end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
-
-  # Defines the root path route ("/")
-  # root "posts#index"
 end
