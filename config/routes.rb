@@ -4,6 +4,8 @@ Rails.application.routes.draw do
     # id segment greedily matches everything after /v1/blobs/.
     resources :blobs, only: %i[index create show], param: :id,
                       constraints: { id: /.+/ }, format: false
+    resources :backends, only: :index
+    put "backends/default" => "backends#set_default"
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -89,6 +89,43 @@ module V1
       assert_response :unauthorized
     end
 
+    test "stores into an explicitly requested backend" do
+      id = "explicit-db-#{SecureRandom.hex(4)}"
+
+      post "/v1/blobs", params: { id: id, data: HELLO, backend: "database" },
+           as: :json, headers: AUTH_HEADER
+      assert_response :created
+
+      assert BlobContent.exists?(blob_id: id)
+      assert_equal "database", Blob.find_by(blob_id: id).backend
+
+      get "/v1/blobs/#{id}", headers: AUTH_HEADER
+      assert_response :success
+      assert_equal HELLO, response.parsed_body["data"]
+    end
+
+    test "rejects unknown or unconfigured backends" do
+      post "/v1/blobs", params: { id: "x-#{SecureRandom.hex(4)}", data: HELLO, backend: "carrier-pigeon" },
+           as: :json, headers: AUTH_HEADER
+      assert_response :unprocessable_entity
+
+      post "/v1/blobs", params: { id: "x-#{SecureRandom.hex(4)}", data: HELLO, backend: "s3" },
+           as: :json, headers: AUTH_HEADER
+      assert_response :unprocessable_entity
+      assert_match(/not configured/, response.parsed_body["error"])
+    end
+
+    test "lists default and available backends" do
+      get "/v1/backends", headers: AUTH_HEADER
+
+      assert_response :success
+      body = response.parsed_body
+      assert_equal "local", body["default"]
+      assert_includes body["available"], "local"
+      assert_includes body["available"], "database"
+      assert_not_includes body["available"], "s3"
+    end
+
     test "returns 404 for unknown blobs" do
       get "/v1/blobs/never-stored-#{SecureRandom.hex(4)}", headers: AUTH_HEADER
 

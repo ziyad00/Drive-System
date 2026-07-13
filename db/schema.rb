@@ -10,7 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_13_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_14_000001) do
+  create_table "api_users", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "default_backend"
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_api_users_on_token_digest", unique: true
+  end
+
   create_table "blob_contents", force: :cascade do |t|
     t.string "blob_id", null: false
     t.datetime "created_at", null: false

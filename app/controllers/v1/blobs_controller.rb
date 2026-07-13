@@ -23,7 +23,7 @@ module V1
         return render json: { error: "blob #{id.inspect} already exists" }, status: :conflict
       end
 
-      adapter = Storage.current
+      adapter = requested_adapter
       adapter.store(id, data)
       blob = Blob.create!(blob_id: id, size: data.bytesize, backend: adapter.name)
 
@@ -40,6 +40,28 @@ module V1
     end
 
     private
+
+    # Precedence: explicit "backend" field on the request, then the user's
+    # personal default, then the system-wide configured backend.
+    def requested_adapter
+      name = params[:backend].presence&.to_s || current_user.effective_backend
+
+      unless Storage::ADAPTERS.key?(name)
+        raise UnusableBackend, "unknown backend #{name.inspect} (available: #{Storage.available_backends.join(', ')})"
+      end
+
+      begin
+        Storage.backend(name)
+      rescue Storage::ConfigurationError
+        raise UnusableBackend, "backend #{name.inspect} is not configured (available: #{Storage.available_backends.join(', ')})"
+      end
+    end
+
+    class UnusableBackend < StandardError; end
+
+    rescue_from UnusableBackend do |error|
+      render json: { error: error.message }, status: :unprocessable_entity
+    end
 
     def blob_json(blob, data)
       {

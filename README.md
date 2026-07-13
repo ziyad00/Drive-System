@@ -3,11 +3,20 @@
 A simple object storage service with a single HTTP API in front of multiple,
 swappable storage backends: **S3-compatible storage** (spoken natively over
 HTTP with a hand-rolled AWS Signature V4 — no S3 SDK), a **database table**,
-the **local file system**, and **FTP**.
+the **local file system**, and **FTP**. Includes a React frontend
+(`frontend/`) for storing and browsing blobs from the browser.
 
 ## API
 
-All requests require Bearer token authentication.
+All requests require Bearer token authentication. Tokens belong to API users
+(only a SHA-256 digest is stored). Mint one with:
+
+```sh
+bin/rails simple_drive:create_user[alice]
+```
+
+Development seeds a ready-made user with token `dev-token`
+(`bin/rails db:seed`).
 
 ### Store a blob
 
@@ -25,6 +34,19 @@ Content-Type: application/json
 `id` is an arbitrary unique string (UUID, path, anything). `data` must be
 valid Base64; the request is rejected with `422` otherwise. Duplicate ids are
 rejected with `409`, missing fields with `400`.
+
+An optional `"backend"` field stores this blob in a specific backend
+(`s3`, `database`, `local`, `ftp`). Without it, the authenticated user's
+default backend applies, falling back to the system default.
+
+### Choose a backend
+
+```
+GET /v1/backends                 -> { "available": [...], "default": "...",
+                                      "user_default": ..., "system_default": "..." }
+PUT /v1/backends/default         { "backend": "database" }   # personal default
+PUT /v1/backends/default         { "backend": null }         # back to system default
+```
 
 ### Retrieve a blob
 
@@ -73,8 +95,7 @@ variable overrides:
 
 | Variable | Meaning | Default |
 | --- | --- | --- |
-| `STORAGE_BACKEND` | `s3`, `database`, `local` or `ftp` | `local` |
-| `SIMPLE_DRIVE_API_TOKEN` | Bearer token accepted by the API | `dev-token` (development only) |
+| `STORAGE_BACKEND` | System default backend: `s3`, `database`, `local` or `ftp` | `local` |
 | `LOCAL_STORAGE_PATH` | Directory for the local backend | `storage/blobs` |
 | `S3_ENDPOINT` | e.g. `https://s3.amazonaws.com` or `http://localhost:9000` | — |
 | `S3_BUCKET` / `S3_REGION` | Bucket and region | region: `us-east-1` |

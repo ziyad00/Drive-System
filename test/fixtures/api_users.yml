@@ -1,0 +1,3 @@
+tester:
+  name: tester
+  token_digest: <%= OpenSSL::Digest::SHA256.hexdigest("test-token") %>

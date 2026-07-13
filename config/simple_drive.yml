@@ -5,9 +5,6 @@ shared:
   # Retrieval always uses the backend recorded when the blob was stored.
   backend: <%= ENV.fetch("STORAGE_BACKEND", "local") %>
 
-  # Bearer token accepted by the API.
-  api_token: <%= ENV["SIMPLE_DRIVE_API_TOKEN"] %>
-
   local:
     path: <%= ENV.fetch("LOCAL_STORAGE_PATH", Rails.root.join("storage", "blobs")) %>
 
@@ -25,10 +22,6 @@ shared:
     password: <%= ENV["FTP_PASSWORD"] %>
     base_dir: <%= ENV["FTP_BASE_DIR"] %>
 
-development:
-  api_token: <%= ENV.fetch("SIMPLE_DRIVE_API_TOKEN", "dev-token") %>
-
 test:
-  api_token: test-token
   local:
     path: <%= Rails.root.join("tmp", "test_storage") %>
