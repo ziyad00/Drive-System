@@ -3,12 +3,14 @@ class ApplicationController < ActionController::API
 
   before_action :authenticate!
 
+  attr_reader :current_user
+
   private
 
   def authenticate!
     authenticate_or_request_with_http_token do |token, _options|
-      expected = Storage.config[:api_token].to_s
-      expected.present? && ActiveSupport::SecurityUtils.secure_compare(token, expected)
+      @current_user = ApiUser.authenticate(token)
+      @current_user.present?
     end
   end
 

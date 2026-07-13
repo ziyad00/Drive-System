@@ -31,6 +31,20 @@ module Storage
       Rails.application.config_for(:simple_drive)
     end
 
+    def default_backend
+      config.fetch(:backend).to_s
+    end
+
+    # Backends whose configuration is complete and can serve requests.
+    def available_backends
+      ADAPTERS.keys.select do |name|
+        backend(name)
+        true
+      rescue ConfigurationError
+        false
+      end
+    end
+
     # Used by tests to pick up config/env changes.
     def reset!
       adapters.clear
