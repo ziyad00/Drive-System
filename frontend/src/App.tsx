@@ -5,22 +5,28 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { BlobTable } from "@/components/blob-table"
 import { UploadCard } from "@/components/upload-card"
-import { ApiError, listBlobs, type BlobMeta } from "@/lib/api"
-import { DatabaseIcon, ExternalLinkIcon } from "lucide-react"
+import { ApiError, getBackends, listBlobs, type BackendInfo, type BlobMeta } from "@/lib/api"
+import { useTheme } from "@/lib/theme"
+import { DatabaseIcon, ExternalLinkIcon, MoonIcon, SunIcon } from "lucide-react"
 
 const MINIO_CONSOLE = import.meta.env.VITE_MINIO_CONSOLE ?? "http://localhost:9001"
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("simple-drive-token") ?? "dev-token")
   const [blobs, setBlobs] = useState<BlobMeta[]>([])
+  const [backends, setBackends] = useState<BackendInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { theme, toggle } = useTheme()
 
   const refresh = useCallback(async () => {
     try {
-      setBlobs(await listBlobs(token))
+      const [blobList, backendInfo] = await Promise.all([listBlobs(token), getBackends(token)])
+      setBlobs(blobList)
+      setBackends(backendInfo)
       setError(null)
     } catch (err) {
       setBlobs([])
+      setBackends(null)
       setError(
         err instanceof ApiError && err.status === 401
           ? "Unauthorized — check the API token."
@@ -72,6 +78,14 @@ export default function App() {
             MinIO console
             <ExternalLinkIcon />
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </Button>
         </div>
       </header>
 
@@ -84,7 +98,12 @@ export default function App() {
       )}
 
       <main className="grid gap-6 lg:grid-cols-[minmax(20rem,2fr)_5fr]">
-        <UploadCard token={token} onStored={refresh} />
+        <UploadCard
+          token={token}
+          backends={backends}
+          onStored={refresh}
+          onBackendsChange={setBackends}
+        />
         <BlobTable token={token} blobs={blobs} />
       </main>
     </div>
