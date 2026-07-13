@@ -8,6 +8,6 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
 
     resource "/v1/*",
       headers: :any,
-      methods: [ :get, :post, :options, :head ]
+      methods: [ :get, :post, :put, :options, :head ]
   end
 end

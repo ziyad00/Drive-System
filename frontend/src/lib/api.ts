@@ -49,9 +49,32 @@ export function getBlob(token: string, id: string): Promise<BlobRecord> {
   return request(`/v1/blobs/${encodeURIComponent(id)}`, token)
 }
 
-export function storeBlob(token: string, id: string, data: string): Promise<BlobRecord> {
+export function storeBlob(
+  token: string,
+  id: string,
+  data: string,
+  backend?: string
+): Promise<BlobRecord> {
   return request("/v1/blobs", token, {
     method: "POST",
-    body: JSON.stringify({ id, data }),
+    body: JSON.stringify(backend ? { id, data, backend } : { id, data }),
+  })
+}
+
+export interface BackendInfo {
+  available: string[]
+  default: string
+  user_default: string | null
+  system_default: string
+}
+
+export function getBackends(token: string): Promise<BackendInfo> {
+  return request("/v1/backends", token)
+}
+
+export function setDefaultBackend(token: string, backend: string | null): Promise<BackendInfo> {
+  return request("/v1/backends/default", token, {
+    method: "PUT",
+    body: JSON.stringify({ backend }),
   })
 }

@@ -1,18 +1,40 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ApiError, storeBlob } from "@/lib/api"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ApiError, setDefaultBackend, storeBlob, type BackendInfo } from "@/lib/api"
 import { fileToBase64, formatBytes } from "@/lib/blob-utils"
 
-export function UploadCard({ token, onStored }: { token: string; onStored: () => void }) {
+export function UploadCard({
+  token,
+  backends,
+  onStored,
+  onBackendsChange,
+}: {
+  token: string
+  backends: BackendInfo | null
+  onStored: () => void
+  onBackendsChange: (info: BackendInfo) => void
+}) {
   const [file, setFile] = useState<File | null>(null)
   const [blobId, setBlobId] = useState("")
+  const [backend, setBackend] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (backends && !backend) setBackend(backends.default)
+  }, [backends, backend])
 
   function pick(next: File) {
     setFile(next)
@@ -20,13 +42,13 @@ export function UploadCard({ token, onStored }: { token: string; onStored: () =>
   }
 
   async function store() {
-    if (!file || !blobId.trim()) return
+    if (!file || !blobId.trim() || !backend) return
     setBusy(true)
     try {
       const data = await fileToBase64(file)
-      await storeBlob(token, blobId.trim(), data)
+      await storeBlob(token, blobId.trim(), data, backend)
       toast.success(`Stored "${blobId.trim()}"`, {
-        description: `${formatBytes(file.size)} sent to the storage backend`,
+        description: `${formatBytes(file.size)} sent to the ${backend} backend`,
       })
       setFile(null)
       setBlobId("")
@@ -37,6 +59,18 @@ export function UploadCard({ token, onStored }: { token: string; onStored: () =>
       toast.error(message)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function makeDefault() {
+    if (!backend) return
+    try {
+      const info = await setDefaultBackend(token, backend)
+      onBackendsChange(info)
+      toast.success(`${backend} is now your default backend`)
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Could not set default"
+      toast.error(message)
     }
   }
 
@@ -103,7 +137,35 @@ export function UploadCard({ token, onStored }: { token: string; onStored: () =>
           </p>
         </div>
 
-        <Button onClick={store} disabled={!file || !blobId.trim() || busy}>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="backend">Storage backend</Label>
+          <div className="flex items-center gap-2">
+            <Select value={backend ?? ""} onValueChange={setBackend} disabled={!backends}>
+              <SelectTrigger id="backend" className="flex-1 font-mono">
+                <SelectValue placeholder="Loading…" />
+              </SelectTrigger>
+              <SelectContent>
+                {backends?.available.map((name) => (
+                  <SelectItem key={name} value={name} className="font-mono">
+                    {name}
+                    {name === backends.default ? " (default)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {backends && backend && backend !== backends.default && (
+              <Button variant="outline" size="sm" onClick={makeDefault}>
+                Make default
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Where this file's bytes will live. Your default applies when the API gets no explicit
+            backend.
+          </p>
+        </div>
+
+        <Button onClick={store} disabled={!file || !blobId.trim() || !backend || busy}>
           {busy ? "Storing…" : "Store blob"}
         </Button>
       </CardContent>
