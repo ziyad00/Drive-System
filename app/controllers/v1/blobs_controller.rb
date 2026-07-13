@@ -1,5 +1,19 @@
 module V1
   class BlobsController < ApplicationController
+    # GET /v1/blobs — metadata only; blob content stays in the storage backend
+    def index
+      blobs = Blob.order(created_at: :desc).limit(200)
+
+      render json: blobs.map { |blob|
+        {
+          id: blob.blob_id,
+          size: blob.size.to_s,
+          backend: blob.backend,
+          created_at: blob.created_at.utc.iso8601
+        }
+      }
+    end
+
     # POST /v1/blobs
     def create
       id = params.require(:id).to_s
