@@ -70,6 +70,25 @@ module V1
       assert_response :conflict
     end
 
+    test "lists stored blob metadata without data" do
+      id = "list-me-#{SecureRandom.hex(4)}"
+      post "/v1/blobs", params: { id: id, data: HELLO }, as: :json, headers: AUTH_HEADER
+
+      get "/v1/blobs", headers: AUTH_HEADER
+      assert_response :success
+
+      entry = response.parsed_body.find { |blob| blob["id"] == id }
+      assert_equal "27", entry["size"]
+      assert_equal "local", entry["backend"]
+      assert_not_includes entry.keys, "data"
+    end
+
+    test "listing requires authentication" do
+      get "/v1/blobs"
+
+      assert_response :unauthorized
+    end
+
     test "returns 404 for unknown blobs" do
       get "/v1/blobs/never-stored-#{SecureRandom.hex(4)}", headers: AUTH_HEADER
 

@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   namespace :v1 do
     # Blob ids are arbitrary strings and may contain slashes or dots, so the
     # id segment greedily matches everything after /v1/blobs/.
-    resources :blobs, only: %i[create show], param: :id,
+    resources :blobs, only: %i[index create show], param: :id,
                       constraints: { id: /.+/ }, format: false
   end
 
