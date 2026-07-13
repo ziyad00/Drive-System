@@ -138,6 +138,10 @@ which matches the object's name in the storage backend (e.g. the folder you
 see in the MinIO object browser). `VITE_API_URL` and `VITE_MINIO_CONSOLE`
 override the API and MinIO console locations.
 
+The upload form includes a storage backend picker (only configured backends
+are offered) with a one-click "Make default" that saves the choice as your
+per-user default. A header toggle switches between light and dark themes.
+
 ## Tests
 
 ```sh
