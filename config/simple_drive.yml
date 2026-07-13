@@ -1,0 +1,34 @@
+# Simple Drive configuration. Every value can be overridden with environment
+# variables so deployments never need to edit this file.
+shared:
+  # Which backend new blobs are written to: s3, database, local or ftp.
+  # Retrieval always uses the backend recorded when the blob was stored.
+  backend: <%= ENV.fetch("STORAGE_BACKEND", "local") %>
+
+  # Bearer token accepted by the API.
+  api_token: <%= ENV["SIMPLE_DRIVE_API_TOKEN"] %>
+
+  local:
+    path: <%= ENV.fetch("LOCAL_STORAGE_PATH", Rails.root.join("storage", "blobs")) %>
+
+  s3:
+    endpoint: <%= ENV["S3_ENDPOINT"] %>
+    bucket: <%= ENV["S3_BUCKET"] %>
+    region: <%= ENV.fetch("S3_REGION", "us-east-1") %>
+    access_key_id: <%= ENV["S3_ACCESS_KEY_ID"] %>
+    secret_access_key: <%= ENV["S3_SECRET_ACCESS_KEY"] %>
+
+  ftp:
+    host: <%= ENV["FTP_HOST"] %>
+    port: <%= ENV.fetch("FTP_PORT", 21) %>
+    user: <%= ENV["FTP_USER"] %>
+    password: <%= ENV["FTP_PASSWORD"] %>
+    base_dir: <%= ENV["FTP_BASE_DIR"] %>
+
+development:
+  api_token: <%= ENV.fetch("SIMPLE_DRIVE_API_TOKEN", "dev-token") %>
+
+test:
+  api_token: test-token
+  local:
+    path: <%= Rails.root.join("tmp", "test_storage") %>
