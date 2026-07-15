@@ -17,4 +17,14 @@ class Blob < ApplicationRecord
   def storage_id
     api_user_id ? "#{api_user_id}/#{blob_id}" : blob_id
   end
+
+  # Content checksum in HTTP ETag form. Blobs written before checksums
+  # existed are backfilled the first time their bytes pass through a read.
+  def etag
+    checksum && %("#{checksum}")
+  end
+
+  def backfill_checksum!(data)
+    update_column(:checksum, Digest::SHA256.hexdigest(data)) if checksum.nil?
+  end
 end

@@ -15,6 +15,10 @@ module V1
         render json: node_json(node).merge(children: children.map { |child| node_json(child) })
       else
         data = Storage.backend(node.blob.backend).retrieve(node.blob.storage_id)
+        node.blob.backfill_checksum!(data)
+        etag_header!(node.blob)
+        return head :not_modified if if_none_match_hit?(node.blob)
+
         render json: node_json(node).merge(data: Base64.strict_encode64(data))
       end
     end

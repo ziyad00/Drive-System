@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_15_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000001) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -32,6 +32,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_000002) do
     t.integer "api_user_id"
     t.string "backend", null: false
     t.string "blob_id", null: false
+    t.string "checksum"
     t.datetime "created_at", null: false
     t.bigint "size", null: false
     t.datetime "updated_at", null: false
