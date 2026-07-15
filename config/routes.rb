@@ -6,6 +6,14 @@ Rails.application.routes.draw do
                       constraints: { id: /.+/ }, format: false
     resources :backends, only: :index
     put "backends/default" => "backends#set_default"
+
+    # File tree: path-based reads, id-based mutations.
+    get "fs(/*path)" => "fs#show", format: false, defaults: { path: "" }
+    resources :folders, only: :create
+    resources :files, only: :create
+    resources :nodes, only: %i[update destroy] do
+      member { post :copy }
+    end
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
