@@ -60,6 +60,20 @@ jobs:
       - name: Scan lockfiles for known vulnerabilities
         run: ./osv-scanner scan source -L Gemfile.lock -L frontend/package-lock.json
 
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Filesystem CVE and IaC misconfiguration scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scanners: vuln,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
   frontend-build:
     runs-on: ubuntu-latest
     defaults:

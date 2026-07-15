@@ -190,12 +190,14 @@ bin/rails test
 API tests, security scanners, and the frontend typecheck/build — the same
 checks GitHub Actions runs on every PR, without the round-trip.
 
-Three scanners guard every PR: **Brakeman** (Rails static security
+Four scanners guard every PR: **Brakeman** (Rails static security
 analysis), **gitleaks** (secrets across the full git history; suppressions
-live in `.gitleaks.toml`), and **OSV-Scanner** (known vulnerabilities in
-`Gemfile.lock` and `frontend/package-lock.json`). Locally, install the
-binaries with `winget install Gitleaks.Gitleaks Google.OSVScanner` (or brew);
-`bin/ci` skips those steps gracefully when they're absent.
+live in `.gitleaks.toml`), **OSV-Scanner** (known vulnerabilities in
+`Gemfile.lock` and `frontend/package-lock.json`), and **Trivy** (filesystem
+CVEs plus IaC misconfiguration, HIGH/CRITICAL blocking). Locally, install
+the binaries with `winget install Gitleaks.Gitleaks Google.OSVScanner
+AquaSecurity.Trivy` (or brew); `bin/ci` skips those steps gracefully when
+they're absent.
 
 Covers the API end to end (auth, round-trip, validation errors, duplicates,
 404s), each storage adapter, and the SigV4 signer. S3 tests stub HTTP with
