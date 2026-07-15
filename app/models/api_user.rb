@@ -2,6 +2,8 @@
 # SHA-256 digest of the token is stored. Each user may set a personal
 # default storage backend, falling back to the system default otherwise.
 class ApiUser < ApplicationRecord
+  has_many :blobs, dependent: :restrict_with_exception
+
   validates :name, presence: true
   validates :token_digest, presence: true, uniqueness: true
   validates :default_backend, inclusion: { in: Storage::ADAPTERS.keys }, allow_nil: true

@@ -1,8 +1,8 @@
 module V1
   class BlobsController < ApplicationController
-    # GET /v1/blobs — metadata only; blob content stays in the storage backend
+    # GET /v1/blobs — the current user's blobs; metadata only
     def index
-      blobs = Blob.order(created_at: :desc).limit(200)
+      blobs = current_user.blobs.order(created_at: :desc).limit(200)
 
       render json: blobs.map { |blob|
         {
@@ -25,25 +25,26 @@ module V1
         }, status: :content_too_large
       end
 
-      if Blob.exists?(blob_id: id)
+      if current_user.blobs.exists?(blob_id: id)
         return render json: { error: "blob #{id.inspect} already exists" }, status: :conflict
       end
 
       adapter = requested_adapter
-      adapter.store(id, data)
-      blob = Blob.create!(blob_id: id, size: data.bytesize, backend: adapter.name)
+      blob = current_user.blobs.build(blob_id: id, size: data.bytesize, backend: adapter.name)
+      adapter.store(blob.storage_id, data)
+      blob.save!
 
       # The payload is not echoed back: the client already has it, and
       # re-encoding it would double the request's memory and bandwidth cost.
       render json: blob_metadata_json(blob), status: :created
     end
 
-    # GET /v1/blobs/:id
+    # GET /v1/blobs/:id — only the owner's blobs are visible
     def show
-      blob = Blob.find_by(blob_id: params[:id])
+      blob = current_user.blobs.find_by(blob_id: params[:id])
       return render json: { error: "blob not found" }, status: :not_found unless blob
 
-      data = Storage.backend(blob.backend).retrieve(blob.blob_id)
+      data = Storage.backend(blob.backend).retrieve(blob.storage_id)
       render json: blob_json(blob, data)
     end
 

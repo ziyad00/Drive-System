@@ -18,6 +18,10 @@ bin/rails simple_drive:create_user[alice]
 Development seeds a ready-made user with token `dev-token`
 (`bin/rails db:seed`).
 
+The service is multi-tenant: blobs belong to the user that stored them, all
+reads are owner-scoped, and ids are unique per user — two users can store
+under the same id without seeing or overwriting each other's data.
+
 ### Store a blob
 
 ```
