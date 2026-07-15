@@ -232,6 +232,27 @@ The upload form includes a storage backend picker (only configured backends
 are offered) with a one-click "Make default" that saves the choice as your
 per-user default. A header toggle switches between light and dark themes.
 
+## End-to-end encryption — identity & key transparency
+
+The groundwork for E2EE: users publish long-term **public** identity keys
+(X25519 for key agreement, Ed25519 for signing), generated client-side —
+private keys never reach the server.
+
+```
+PUT /v1/identity              {"kem_public_key": "...", "sig_public_key": "..."}
+GET /v1/identity              # my published keys + fingerprint
+GET /v1/users/:name/identity  # someone's public keys, to encrypt to them
+GET /v1/keylog?since=<seq>    # the transparency log + chain-validity check
+```
+
+Every publish/rotation appends to an **append-only, hash-chained key
+transparency log**: each entry commits to the previous entry's hash, so no
+past binding can be altered or dropped without changing every hash after it.
+Clients verify the chain and watch for unexpected key changes; matching
+**fingerprints** out-of-band confirms two users hold each other's real keys
+(defeating server key substitution). This is the identity layer of the E2EE
+design; the client-side group key agreement (MLS/TreeKEM) builds on it.
+
 ## Server-side encryption
 
 With `SSE_ENABLED=true` and a KMS configured, blob content is encrypted at
