@@ -9,6 +9,41 @@ export interface BlobRecord extends BlobMeta {
   data: string
 }
 
+export interface TreeNode {
+  id: number
+  kind: "folder" | "file"
+  name: string
+  path: string
+  parent_id: number | null
+  created_at: string
+  updated_at: string
+  size?: string
+  content_type?: string
+  client_mtime?: string | null
+  backend?: string
+  etag?: string
+  children?: TreeNode[]
+  data?: string
+}
+
+export interface TrashEntry {
+  id: number
+  kind: "folder" | "file"
+  name: string
+  trashed_from: string
+  trashed_at: string
+  purges_at: string
+}
+
+export interface FileVersion {
+  id: number
+  size: string
+  etag: string
+  backend: string
+  content_type: string | null
+  created_at: string
+}
+
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 
 export class ApiError extends Error {
@@ -28,11 +63,14 @@ async function request<T>(path: string, token: string, init?: RequestInit): Prom
       headers: {
         Authorization: `Bearer ${token}`,
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...init?.headers,
       },
     })
   } catch {
     throw new ApiError(0, `API unreachable at ${BASE} — is the Rails server running?`)
   }
+
+  if (res.status === 204) return undefined as T
 
   const body = await res.json().catch(() => null)
   if (!res.ok) {
@@ -40,6 +78,8 @@ async function request<T>(path: string, token: string, init?: RequestInit): Prom
   }
   return body as T
 }
+
+// --- flat blob API (spec) ---
 
 export function listBlobs(token: string): Promise<BlobMeta[]> {
   return request("/v1/blobs", token)
@@ -61,6 +101,8 @@ export function storeBlob(
   })
 }
 
+// --- backends ---
+
 export interface BackendInfo {
   available: string[]
   default: string
@@ -77,4 +119,86 @@ export function setDefaultBackend(token: string, backend: string | null): Promis
     method: "PUT",
     body: JSON.stringify({ backend }),
   })
+}
+
+// --- file tree ---
+
+function encodePath(path: string): string {
+  return path.split("/").filter(Boolean).map(encodeURIComponent).join("/")
+}
+
+export function getPath(token: string, path: string): Promise<TreeNode> {
+  return request(`/v1/fs/${encodePath(path)}`, token)
+}
+
+export function createFolder(token: string, path: string): Promise<TreeNode> {
+  return request("/v1/folders", token, { method: "POST", body: JSON.stringify({ path }) })
+}
+
+export function createFile(
+  token: string,
+  path: string,
+  data: string,
+  contentType?: string
+): Promise<TreeNode> {
+  return request("/v1/files", token, {
+    method: "POST",
+    body: JSON.stringify({ path, data, content_type: contentType }),
+  })
+}
+
+export function replaceFile(
+  token: string,
+  path: string,
+  data: string,
+  contentType?: string
+): Promise<TreeNode> {
+  return request("/v1/files", token, {
+    method: "PUT",
+    body: JSON.stringify({ path, data, content_type: contentType }),
+  })
+}
+
+export function renameNode(token: string, id: number, name: string): Promise<TreeNode> {
+  return request(`/v1/nodes/${id}`, token, { method: "PATCH", body: JSON.stringify({ name }) })
+}
+
+export function trashNode(token: string, id: number): Promise<void> {
+  return request(`/v1/nodes/${id}`, token, { method: "DELETE" })
+}
+
+export async function downloadFile(token: string, path: string): Promise<globalThis.Blob> {
+  const res = await fetch(`${BASE}/v1/dl/${encodePath(path)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new ApiError(res.status, `download failed (${res.status})`)
+  return res.blob()
+}
+
+// --- versions ---
+
+export function listVersions(token: string, nodeId: number): Promise<FileVersion[]> {
+  return request(`/v1/nodes/${nodeId}/versions`, token)
+}
+
+export function restoreVersion(token: string, nodeId: number, versionId: number): Promise<TreeNode> {
+  return request(`/v1/nodes/${nodeId}/versions/${versionId}/restore`, token, { method: "POST" })
+}
+
+// --- trash ---
+
+export function listTrash(token: string): Promise<TrashEntry[]> {
+  return request("/v1/trash", token)
+}
+
+export function restoreTrash(token: string, id: number): Promise<TreeNode> {
+  return request(`/v1/trash/${id}/restore`, token, { method: "POST" })
+}
+
+export function purgeTrash(token: string, id: number): Promise<void> {
+  return request(`/v1/trash/${id}`, token, { method: "DELETE" })
+}
+
+export function emptyTrash(token: string): Promise<void> {
+  return request("/v1/trash", token, { method: "DELETE" })
 }
