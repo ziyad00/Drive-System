@@ -9,10 +9,21 @@ module Storage
         raise ConfigurationError, "local backend requires a storage path"
     end
 
+    # Write-to-temp-then-rename keeps the final path atomic: it only ever
+    # holds nothing or the complete file, so a crash mid-write can never
+    # leave a truncated blob that retrieve would happily serve.
     def store(id, data)
       path = path_for(id)
       FileUtils.mkdir_p(File.dirname(path))
-      File.binwrite(path, data)
+
+      temp_path = "#{path}.tmp-#{SecureRandom.hex(8)}"
+      begin
+        File.binwrite(temp_path, data)
+        File.rename(temp_path, path)
+      rescue StandardError
+        File.unlink(temp_path) if File.exist?(temp_path)
+        raise
+      end
     end
 
     def retrieve(id)
