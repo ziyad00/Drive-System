@@ -25,6 +25,20 @@ module Storage
       assert File.file?(File.join(@root, key[0, 2], key[2, 2], key))
     end
 
+    test "leaves no temp files behind after a successful store" do
+      @adapter.store("clean", "payload")
+
+      leftovers = Dir.glob(File.join(@root, "**", "*.tmp-*"))
+      assert_empty leftovers
+    end
+
+    test "overwrites an existing file atomically" do
+      @adapter.store("rewrite", "first")
+      @adapter.store("rewrite", "second")
+
+      assert_equal "second", @adapter.retrieve("rewrite")
+    end
+
     test "raises NotFound for unknown ids" do
       assert_raises(Storage::NotFound) { @adapter.retrieve("missing") }
     end
