@@ -49,6 +49,20 @@ module Storage
       assert_raises(Storage::Error) { @adapter.store("my-id", "payload") }
     end
 
+    test "maps timeouts to Storage::Error" do
+      stub_request(:get, "http://minio.test:9000/blobs/#{@key}").to_timeout
+
+      error = assert_raises(Storage::Error) { @adapter.retrieve("my-id") }
+      assert_match(/timed out|failed/, error.message)
+    end
+
+    test "maps connection failures to Storage::Error" do
+      stub_request(:put, "http://minio.test:9000/blobs/#{@key}")
+        .to_raise(Errno::ECONNREFUSED)
+
+      assert_raises(Storage::Error) { @adapter.store("my-id", "payload") }
+    end
+
     test "requires full configuration" do
       assert_raises(Storage::ConfigurationError) { S3.new(endpoint: "http://x", bucket: "b") }
     end

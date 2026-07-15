@@ -18,6 +18,9 @@ module Storage
 
       @endpoint = URI(config[:endpoint])
       @bucket = config[:bucket]
+      @open_timeout = config.fetch(:open_timeout, 5).to_f
+      @read_timeout = config.fetch(:read_timeout, 30).to_f
+      @write_timeout = config.fetch(:write_timeout, 30).to_f
       @signer = Signer.new(
         region: config[:region],
         access_key_id: config[:access_key_id],
@@ -45,6 +48,9 @@ module Storage
 
     private
 
+    # Every request runs under explicit timeouts so a stalled endpoint
+    # fails fast instead of pinning a server thread for Net::HTTP's
+    # 60-second defaults, and network failures surface as Storage::Error.
     def request(verb, key, body: nil)
       uri = @endpoint.dup
       uri.path = "/#{@bucket}/#{key}"
@@ -53,9 +59,17 @@ module Storage
       request.body = body
       @signer.sign!(request, uri)
 
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+      Net::HTTP.start(uri.host, uri.port,
+                      use_ssl: uri.scheme == "https",
+                      open_timeout: @open_timeout,
+                      read_timeout: @read_timeout,
+                      write_timeout: @write_timeout) do |http|
         http.request(request)
       end
+    rescue Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout => error
+      raise Error, "S3 request timed out: #{error.class.name.demodulize}"
+    rescue SocketError, SystemCallError, IOError, OpenSSL::SSL::SSLError => error
+      raise Error, "S3 request failed: #{error.message}"
     end
   end
 end

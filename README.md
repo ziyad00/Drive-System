@@ -105,6 +105,7 @@ variable overrides:
 | `S3_ENDPOINT` | e.g. `https://s3.amazonaws.com` or `http://localhost:9000` | — |
 | `S3_BUCKET` / `S3_REGION` | Bucket and region | region: `us-east-1` |
 | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Credentials | — |
+| `S3_OPEN_TIMEOUT` / `S3_READ_TIMEOUT` / `S3_WRITE_TIMEOUT` | Seconds before a stalled S3 endpoint fails the request | `5` / `30` / `30` |
 | `FTP_HOST` / `FTP_PORT` / `FTP_USER` / `FTP_PASSWORD` / `FTP_BASE_DIR` | FTP settings | port: `21` |
 | `FTP_TLS` | FTPS (explicit TLS); disable only for TLS-less servers | `true` |
 
