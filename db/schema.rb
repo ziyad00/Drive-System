@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000006) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000007) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -50,6 +50,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000006) do
     t.datetime "updated_at", null: false
     t.index ["blob_id"], name: "index_file_versions_on_blob_id"
     t.index ["node_id"], name: "index_file_versions_on_node_id"
+  end
+
+  create_table "key_log_entries", force: :cascade do |t|
+    t.integer "api_user_id", null: false
+    t.datetime "created_at", null: false
+    t.string "entry_hash", null: false
+    t.string "kem_public_key", null: false
+    t.string "prev_hash", null: false
+    t.integer "seq", null: false
+    t.string "sig_public_key", null: false
+    t.index ["api_user_id"], name: "index_key_log_entries_on_api_user_id"
+    t.index ["entry_hash"], name: "index_key_log_entries_on_entry_hash", unique: true
+    t.index ["seq"], name: "index_key_log_entries_on_seq", unique: true
   end
 
   create_table "nodes", force: :cascade do |t|
@@ -100,9 +113,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000006) do
     t.index ["api_user_id"], name: "index_uploads_on_api_user_id"
   end
 
+  create_table "user_identities", force: :cascade do |t|
+    t.integer "api_user_id", null: false
+    t.datetime "created_at", null: false
+    t.string "kem_public_key", null: false
+    t.string "sig_public_key", null: false
+    t.datetime "updated_at", null: false
+    t.index ["api_user_id"], name: "index_user_identities_on_api_user_id", unique: true
+  end
+
   add_foreign_key "blobs", "api_users"
   add_foreign_key "file_versions", "blobs"
   add_foreign_key "file_versions", "nodes"
+  add_foreign_key "key_log_entries", "api_users"
   add_foreign_key "nodes", "api_users"
   add_foreign_key "nodes", "blobs"
   add_foreign_key "nodes", "nodes", column: "parent_id"
@@ -110,4 +133,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000006) do
   add_foreign_key "shares", "api_users", column: "grantee_id"
   add_foreign_key "shares", "nodes"
   add_foreign_key "uploads", "api_users"
+  add_foreign_key "user_identities", "api_users"
 end

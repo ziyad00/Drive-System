@@ -22,6 +22,10 @@ Rails.application.routes.draw do
       get "shares" => "shares#node_index"
     end
     get "shares" => "shares#index"
+    get "identity" => "identity#show"
+    put "identity" => "identity#update"
+    get "users/:name/identity" => "identity#lookup"
+    get "keylog" => "key_log#index"
     # Shared content, addressed under the grant.
     get "shared(/*path)" => "shared#show", format: false, defaults: { path: "" }
     put "shared/*path" => "shared#update", format: false
