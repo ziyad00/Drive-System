@@ -253,6 +253,45 @@ Clients verify the chain and watch for unexpected key changes; matching
 (defeating server key substitution). This is the identity layer of the E2EE
 design; the client-side group key agreement (MLS/TreeKEM) builds on it.
 
+## End-to-end encryption — group key agreement
+
+Group E2EE where the server never sees a private key or the group secret.
+Built on the identity layer above, using a from-scratch **TreeKEM**-style
+ratchet (the mechanism behind MLS / RFC 9420) composed from standard
+primitives — X25519, HKDF-SHA256, AES-256-GCM.
+
+- Members are leaves of a ratchet tree. A **commit** rekeys the committer's
+  path in O(log N); each path secret is sealed (HPKE-style) to the exactly
+  the members who should learn it, so all current members converge on a
+  fresh epoch **group key** and removed members provably cannot.
+- **Add / remove** change membership and advance the epoch; removal blanks
+  the member's leaf and path so a new commit rekeys beyond their reach
+  (forward secrecy).
+- **File keys** are random per file; content is sealed with streaming
+  AES-256-GCM (STREAM construction) under the file key, and the file key is
+  sealed under the epoch group key. On a membership change the file key is
+  **re-sealed** under the new epoch key — the data is never re-encrypted
+  (key versioning / re-encryption).
+
+```
+POST   /v1/groups                    {"name": "...", "capacity": 8}
+GET    /v1/groups/:id                # public tree + members (to build/apply commits)
+POST   /v1/groups/:id/members        {"user": "bob"}      # owner only
+DELETE /v1/groups/:id/members/:user  # owner only
+POST   /v1/groups/:id/commits        {"message": {...}}   # a member uploads a commit it built
+GET    /v1/groups/:id/commits?since=<epoch>
+```
+
+The server stores only the **public** ratchet tree and the append-only log of
+commits, whose path secrets are **encrypted to members** — opaque to the
+server. Members build and apply commits client-side.
+
+> **Security status.** This is an educational, from-scratch implementation of
+> the protocol, tested against its security properties (N-party convergence,
+> removal forward-secrecy, tamper detection). It has **not** been independently
+> audited and must not protect real secrets without formal review. Browser
+> delivery additionally depends on the web-crypto trust story (issue #37).
+
 ## Server-side encryption
 
 With `SSE_ENABLED=true` and a KMS configured, blob content is encrypted at

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000007) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000008) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -42,6 +42,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000007) do
     t.index ["api_user_id"], name: "index_blobs_on_api_user_id"
   end
 
+  create_table "encryption_groups", force: :cascade do |t|
+    t.integer "capacity", default: 8, null: false
+    t.datetime "created_at", null: false
+    t.integer "epoch", default: 0, null: false
+    t.string "name", null: false
+    t.integer "owner_id", null: false
+    t.text "public_state"
+    t.datetime "updated_at", null: false
+    t.index ["owner_id"], name: "index_encryption_groups_on_owner_id"
+  end
+
   create_table "file_versions", force: :cascade do |t|
     t.integer "blob_id", null: false
     t.string "content_type"
@@ -50,6 +61,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000007) do
     t.datetime "updated_at", null: false
     t.index ["blob_id"], name: "index_file_versions_on_blob_id"
     t.index ["node_id"], name: "index_file_versions_on_node_id"
+  end
+
+  create_table "group_commits", force: :cascade do |t|
+    t.integer "committer_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "encryption_group_id", null: false
+    t.integer "epoch", null: false
+    t.text "message", null: false
+    t.index ["committer_id"], name: "index_group_commits_on_committer_id"
+    t.index ["encryption_group_id", "epoch"], name: "index_group_commits_on_encryption_group_id_and_epoch", unique: true
+    t.index ["encryption_group_id"], name: "index_group_commits_on_encryption_group_id"
+  end
+
+  create_table "group_members", force: :cascade do |t|
+    t.integer "api_user_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "encryption_group_id", null: false
+    t.integer "leaf_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["api_user_id"], name: "index_group_members_on_api_user_id"
+    t.index ["encryption_group_id", "api_user_id"], name: "index_group_members_on_encryption_group_id_and_api_user_id", unique: true
+    t.index ["encryption_group_id", "leaf_id"], name: "index_group_members_on_encryption_group_id_and_leaf_id", unique: true
+    t.index ["encryption_group_id"], name: "index_group_members_on_encryption_group_id"
   end
 
   create_table "key_log_entries", force: :cascade do |t|
@@ -123,8 +157,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000007) do
   end
 
   add_foreign_key "blobs", "api_users"
+  add_foreign_key "encryption_groups", "api_users", column: "owner_id"
   add_foreign_key "file_versions", "blobs"
   add_foreign_key "file_versions", "nodes"
+  add_foreign_key "group_commits", "api_users", column: "committer_id"
+  add_foreign_key "group_commits", "encryption_groups"
+  add_foreign_key "group_members", "api_users"
+  add_foreign_key "group_members", "encryption_groups"
   add_foreign_key "key_log_entries", "api_users"
   add_foreign_key "nodes", "api_users"
   add_foreign_key "nodes", "blobs"
