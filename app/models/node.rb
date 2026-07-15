@@ -15,6 +15,7 @@ class Node < ApplicationRecord
   has_many :children, class_name: "Node", foreign_key: :parent_id,
                       inverse_of: :parent, dependent: :destroy
   has_many :file_versions, dependent: :destroy
+  has_many :shares, dependent: :destroy
 
   validates :kind, inclusion: { in: KINDS }
   validates :name, presence: true, unless: :root?
@@ -53,6 +54,17 @@ class Node < ApplicationRecord
 
     prefix = parent.root? ? "" : parent.path
     "#{prefix}/#{name}"
+  end
+
+  # Self and every ancestor up to (not including) the root sentinel.
+  def self_and_ancestors
+    chain = []
+    node = self
+    while node && !node.root?
+      chain << node
+      node = node.parent
+    end
+    chain
   end
 
   def descendant_of?(other)

@@ -93,6 +93,27 @@ folder; MIME types are sniffed from content when not supplied. File
 responses carry a strong ETag (SHA-256 of content): reads honor
 `If-None-Match` (304), replacements honor `If-Match` (412 on mismatch).
 
+### Sharing
+
+Owners grant other users access to a file or folder (a folder grant covers
+its whole subtree). Sharing is pure authorization metadata — it never moves
+or copies bytes.
+
+```
+POST   /v1/nodes/:id/shares   {"grantee": "bob", "permission": "read|write",
+                               "expires_at": "..."}        # owner only
+GET    /v1/nodes/:id/shares                                # grants on this node
+DELETE /v1/nodes/:id/shares/:share_id                      # revoke
+GET    /v1/shares                                          # shared with me
+GET    /v1/shared/<path>       # browse/read shared content
+PUT    /v1/shared/<path>       # overwrite (write shares only; honors If-Match)
+```
+
+Read shares are read-only; write shares let the grantee overwrite in place,
+and the change is versioned under the owner's file just like an owner write.
+Expired shares become invisible. Access is resolved in one place
+(`NodeAccess`): the owner, or an active share on the node or any ancestor.
+
 ### Retrieve a blob
 
 ```

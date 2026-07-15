@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000004) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000005) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -71,6 +71,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000004) do
     t.index ["parent_id"], name: "index_nodes_on_parent_id"
   end
 
+  create_table "shares", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "created_by_id", null: false
+    t.datetime "expires_at"
+    t.integer "grantee_id", null: false
+    t.integer "node_id", null: false
+    t.string "permission", default: "read", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_shares_on_created_by_id"
+    t.index ["grantee_id"], name: "index_shares_on_grantee_id"
+    t.index ["node_id", "grantee_id"], name: "index_shares_on_node_id_and_grantee_id", unique: true
+    t.index ["node_id"], name: "index_shares_on_node_id"
+  end
+
   create_table "uploads", force: :cascade do |t|
     t.integer "api_user_id", null: false
     t.string "backend"
@@ -90,5 +104,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000004) do
   add_foreign_key "nodes", "api_users"
   add_foreign_key "nodes", "blobs"
   add_foreign_key "nodes", "nodes", column: "parent_id"
+  add_foreign_key "shares", "api_users", column: "created_by_id"
+  add_foreign_key "shares", "api_users", column: "grantee_id"
+  add_foreign_key "shares", "nodes"
   add_foreign_key "uploads", "api_users"
 end
