@@ -5,6 +5,7 @@ class ApiUser < ApplicationRecord
   has_many :blobs, dependent: :restrict_with_exception
   has_many :nodes, dependent: :restrict_with_exception
   has_many :uploads, dependent: :destroy
+  has_many :shares, foreign_key: :grantee_id, inverse_of: :grantee, dependent: :destroy
 
   validates :name, presence: true
   validates :token_digest, presence: true, uniqueness: true

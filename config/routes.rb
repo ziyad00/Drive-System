@@ -18,7 +18,13 @@ Rails.application.routes.draw do
       resources :versions, only: %i[index destroy] do
         member { post :restore }
       end
+      resources :shares, only: %i[create destroy], controller: "shares"
+      get "shares" => "shares#node_index"
     end
+    get "shares" => "shares#index"
+    # Shared content, addressed under the grant.
+    get "shared(/*path)" => "shared#show", format: false, defaults: { path: "" }
+    put "shared/*path" => "shared#update", format: false
     resources :uploads, only: %i[create show destroy]
     get "trash" => "trash#index"
     delete "trash" => "trash#empty"
