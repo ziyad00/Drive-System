@@ -110,6 +110,22 @@ variable overrides:
 | `FTP_HOST` / `FTP_PORT` / `FTP_USER` / `FTP_PASSWORD` / `FTP_BASE_DIR` | FTP settings | port: `21` |
 | `FTP_TLS` | FTPS (explicit TLS); disable only for TLS-less servers | `true` |
 
+## Development stack
+
+`docker compose up -d` boots every service the app (and future designs) can
+use — Postgres 17, Valkey, MinIO (bucket auto-created, console on :9001),
+a dev-only plain-FTP server (set `FTP_TLS=false` to use it), and OpenBao in
+dev mode with a ready `simple-drive` transit KEK (AES-256-GCM) on :8200.
+Optional profiles: `--profile observability` (Prometheus :9090, Grafana
+:3001, Jaeger :16686) and `--profile security` (ClamAV :3310). All
+credentials are dev-only defaults; state lives in named volumes.
+
+Run the API against the stack's MinIO with:
+
+```sh
+STORAGE_BACKEND=s3 S3_ENDPOINT=http://localhost:9000 S3_BUCKET=blobs S3_ACCESS_KEY_ID=minioadmin S3_SECRET_ACCESS_KEY=minioadmin bin/rails server
+```
+
 ## Running
 
 ```sh
