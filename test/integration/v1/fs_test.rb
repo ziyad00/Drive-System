@@ -145,27 +145,27 @@ module V1
       assert_response :success
     end
 
-    test "deleting a file purges its bytes and metadata" do
+    test "permanently deleting a file purges its bytes and metadata" do
       upload("/doomed.txt", "bytes")
       node_id = response.parsed_body["id"]
       blob = Node.find(node_id).blob
 
-      delete "/v1/nodes/#{node_id}", headers: @auth
+      delete "/v1/nodes/#{node_id}", params: { permanent: "true" }, headers: @auth
 
       assert_response :no_content
       assert_not Blob.exists?(blob.id)
       assert_raises(Storage::NotFound) { Storage.backend(blob.backend).retrieve(blob.storage_id) }
     end
 
-    test "refuses to delete a non-empty folder without recursive" do
+    test "permanent deletion of a non-empty folder requires recursive" do
       upload("/keep/file.txt", "x")
       get "/v1/fs/keep", headers: @auth
       folder_id = response.parsed_body["id"]
 
-      delete "/v1/nodes/#{folder_id}", headers: @auth
+      delete "/v1/nodes/#{folder_id}", params: { permanent: "true" }, headers: @auth
       assert_response :unprocessable_entity
 
-      delete "/v1/nodes/#{folder_id}", params: { recursive: "true" }, headers: @auth
+      delete "/v1/nodes/#{folder_id}", params: { permanent: "true", recursive: "true" }, headers: @auth
       assert_response :no_content
       assert_equal 0, @user.blobs.count
     end

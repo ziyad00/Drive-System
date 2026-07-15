@@ -78,7 +78,12 @@ POST  /v1/nodes/:id/versions/:v/restore  swap a version back in (the current
 DELETE /v1/nodes/:id/versions/:v       purge one version
 PATCH /v1/nodes/:id          {"name": ...} rename / {"parent_id": ...} move
 POST  /v1/nodes/:id/copy     {"parent_id": ..., "name": ...}    # folders copy recursively
-DELETE /v1/nodes/:id[?recursive=true]                           # purges file bytes
+DELETE /v1/nodes/:id         to the trash; ?permanent=true purges bytes
+                              (non-empty folders then need recursive=true)
+GET    /v1/trash             trashed items with origin and purge date
+POST   /v1/trash/:id/restore back to the original folder (or root), renamed
+                              on conflict
+DELETE /v1/trash[/:id]       permanent purge (one entry, or empty the bin)
 ```
 
 The tree is an adjacency list, so moving a subtree of any size is one
@@ -139,6 +144,7 @@ variable overrides:
 | `MAX_BLOB_BYTES` | Maximum decoded blob size; larger requests get `413` | `26214400` (25 MB) |
 | `RATE_LIMIT_PER_MINUTE` | Requests allowed per client (token or IP) per minute; excess gets `429` | `120` |
 | `MAX_FILE_VERSIONS` | Retained versions per file; older ones are purged | `10` |
+| `TRASH_RETENTION_DAYS` | Days before `simple_drive:purge_trash` removes trashed items | `30` |
 | `LOCAL_STORAGE_PATH` | Directory for the local backend | `storage/blobs` |
 | `S3_ENDPOINT` | e.g. `https://s3.amazonaws.com` or `http://localhost:9000` | — |
 | `S3_BUCKET` / `S3_REGION` | Bucket and region | region: `us-east-1` |
