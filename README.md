@@ -164,6 +164,8 @@ variable overrides:
 | `STORAGE_BACKEND` | System default backend: `s3`, `database`, `local` or `ftp` | `local` |
 | `MAX_BLOB_BYTES` | Maximum decoded blob size; larger requests get `413` | `26214400` (25 MB) |
 | `RATE_LIMIT_PER_MINUTE` | Requests allowed per client (token or IP) per minute; excess gets `429` | `120` |
+| `SSE_ENABLED` | Encrypt blob content at rest with per-blob keys (needs KMS) | `false` |
+| `KMS_ADDR` / `KMS_TOKEN` / `KMS_KEY` | OpenBao transit endpoint, token, and master key name | key: `simple-drive` |
 | `MAX_FILE_VERSIONS` | Retained versions per file; older ones are purged | `10` |
 | `TRASH_RETENTION_DAYS` | Days before `simple_drive:purge_trash` removes trashed items | `30` |
 | `LOCAL_STORAGE_PATH` | Directory for the local backend | `storage/blobs` |
@@ -229,6 +231,30 @@ override the API and MinIO console locations.
 The upload form includes a storage backend picker (only configured backends
 are offered) with a one-click "Make default" that saves the choice as your
 per-user default. A header toggle switches between light and dark themes.
+
+## Server-side encryption
+
+With `SSE_ENABLED=true` and a KMS configured, blob content is encrypted at
+rest with envelope encryption: every blob gets a fresh 256-bit data key
+(DEK), content is sealed with **AES-256-GCM** using the STREAM chunked
+construction (each 64 KiB chunk authenticated, with a nonce prefix + counter
++ final-chunk flag so reordering, truncation and extension are detected),
+and the DEK is **wrapped by the KMS master key** (OpenBao transit) and stored
+beside the ciphertext — the plaintext DEK is never persisted. Size and ETag
+are computed over the plaintext, so range downloads and `If-Match` behave
+identically to unencrypted blobs.
+
+Rotating the master key never re-encrypts data:
+
+```sh
+bin/rails encryption:rewrap   # re-wraps every DEK under the latest KEK version
+```
+
+The OpenBao KMS ships in the dev stack with an AES-256-GCM key ready:
+
+```sh
+SSE_ENABLED=true KMS_ADDR=http://localhost:8200 KMS_TOKEN=dev-root-token bin/rails server
+```
 
 ## Security notes
 

@@ -35,7 +35,7 @@ module V1
       blob = current_user.blobs.find_by(blob_id: params[:id])
       return render json: { error: "blob not found" }, status: :not_found unless blob
 
-      data = Storage.backend(blob.backend).retrieve(blob.storage_id)
+      data = BlobWriter.read(blob)
       render json: blob_json(blob, data)
     end
 

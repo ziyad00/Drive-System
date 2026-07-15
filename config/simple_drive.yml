@@ -9,6 +9,14 @@ shared:
   # its pre-parse ceiling from the same variable.
   max_blob_bytes: <%= ENV.fetch("MAX_BLOB_BYTES", 26_214_400) %>
 
+  # Server-side encryption: seal blob content with per-blob data keys wrapped
+  # by the KMS master key. Requires the kms block below to be configured.
+  sse: <%= ENV.fetch("SSE_ENABLED", "false") %>
+  kms:
+    addr: <%= ENV["KMS_ADDR"] %>
+    token: <%= ENV["KMS_TOKEN"] %>
+    key: <%= ENV.fetch("KMS_KEY", "simple-drive") %>
+
   local:
     path: <%= ENV.fetch("LOCAL_STORAGE_PATH", Rails.root.join("storage", "blobs")) %>
 

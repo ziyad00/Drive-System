@@ -92,7 +92,7 @@ module V1
 
     def deep_copy(node, parent, name, copied_blobs)
       if node.file?
-        bytes = Storage.backend(node.blob.backend).retrieve(node.blob.storage_id)
+        bytes = BlobWriter.read(node.blob)
         blob = BlobWriter.store!(user: current_user, blob_id: "fs/#{SecureRandom.uuid}",
                                  data: bytes, backend_name: node.blob.backend)
         copied_blobs << blob

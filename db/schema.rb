@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000005) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000006) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -34,8 +34,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000005) do
     t.string "blob_id", null: false
     t.string "checksum"
     t.datetime "created_at", null: false
+    t.string "encryption", default: "plain", null: false
     t.bigint "size", null: false
     t.datetime "updated_at", null: false
+    t.text "wrapped_dek"
     t.index ["api_user_id", "blob_id"], name: "index_blobs_on_api_user_id_and_blob_id", unique: true
     t.index ["api_user_id"], name: "index_blobs_on_api_user_id"
   end

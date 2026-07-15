@@ -38,6 +38,11 @@ module Storage
       config.fetch(:backend).to_s
     end
 
+    # Server-side encryption is on only when opted in and a KMS is wired up.
+    def sse?
+      ActiveModel::Type::Boolean.new.cast(config[:sse]) && Kms.enabled?
+    end
+
     # Resolve the adapter a write should use: the explicitly requested
     # backend, else the user's personal default, else the system default.
     # Raises UnusableBackend for names that are unknown or unconfigured.
