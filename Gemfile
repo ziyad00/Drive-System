@@ -12,6 +12,9 @@ gem "net-ftp", require: false
 # Cross-origin requests from the frontend dev server
 gem "rack-cors"
 
+# Request throttling (429s for upload spam and auth hammering)
+gem "rack-attack"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
