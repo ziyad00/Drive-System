@@ -5,8 +5,12 @@ require "webmock/minitest"
 
 module ActiveSupport
   class TestCase
-    # Run tests in parallel with specified workers
-    parallelize(workers: :number_of_processors, with: :threads)
+    # The suite runs in a single process: several tests deliberately manage
+    # process-global seams (storage adapter injection, Net::FTP capture,
+    # ENV-driven limits), and at well under a second for the whole run
+    # thread-parallelism has nothing to buy — while causing deadlocks once
+    # the suite crossed Rails' 50-test parallelization threshold.
+    parallelize(workers: 1)
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
