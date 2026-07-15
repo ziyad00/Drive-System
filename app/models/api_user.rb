@@ -32,7 +32,15 @@ class ApiUser < ApplicationRecord
 
   # The sentinel at the top of this user's file tree.
   def root_node
-    nodes.find_or_create_by!(parent_id: nil) do |node|
+    nodes.find_or_create_by!(parent_id: nil, role: "root") do |node|
+      node.kind = "folder"
+      node.name = ""
+    end
+  end
+
+  # The sentinel trashed subtrees are reparented under.
+  def trash_node
+    nodes.find_or_create_by!(parent_id: nil, role: "trash") do |node|
       node.kind = "folder"
       node.name = ""
     end

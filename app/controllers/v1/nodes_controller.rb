@@ -59,15 +59,21 @@ module V1
       raise error
     end
 
-    # DELETE /v1/nodes/:id — folders require recursive=true unless empty.
-    # File bytes are purged from the storage backend.
+    # DELETE /v1/nodes/:id — moves the subtree to the trash (recoverable,
+    # so no recursive guard). permanent=true skips the trash and purges
+    # bytes; non-empty folders then require recursive=true.
     def destroy
-      if @node.folder? && @node.children.exists? && params[:recursive].to_s != "true"
-        return render json: { error: "folder is not empty (pass recursive=true)" },
-                      status: :unprocessable_entity
+      if params[:permanent].to_s == "true"
+        if @node.folder? && @node.children.exists? && params[:recursive].to_s != "true"
+          return render json: { error: "folder is not empty (pass recursive=true)" },
+                        status: :unprocessable_entity
+        end
+
+        @node.destroy!
+      else
+        Trash.trash!(@node)
       end
 
-      @node.destroy!
       head :no_content
     end
 
@@ -79,7 +85,9 @@ module V1
     end
 
     def forbid_root
-      render json: { error: "the root folder cannot be modified" }, status: :unprocessable_entity if @node&.root?
+      if @node&.sentinel?
+        render json: { error: "the root folder cannot be modified" }, status: :unprocessable_entity
+      end
     end
 
     def deep_copy(node, parent, name, copied_blobs)

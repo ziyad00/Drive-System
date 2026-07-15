@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000004) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -58,7 +58,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000003) do
     t.datetime "created_at", null: false
     t.string "kind", null: false
     t.string "name", null: false
+    t.string "original_name"
+    t.bigint "original_parent_id"
     t.integer "parent_id"
+    t.string "role"
+    t.datetime "trashed_at"
+    t.string "trashed_from"
     t.datetime "updated_at", null: false
     t.index ["api_user_id", "parent_id", "name"], name: "index_nodes_on_api_user_id_and_parent_id_and_name", unique: true
     t.index ["api_user_id"], name: "index_nodes_on_api_user_id"

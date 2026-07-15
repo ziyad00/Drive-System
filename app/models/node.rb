@@ -32,6 +32,14 @@ class Node < ApplicationRecord
     parent_id.nil?
   end
 
+  def sentinel?
+    role.present?
+  end
+
+  def trashed?
+    trashed_at.present?
+  end
+
   def folder?
     kind == "folder"
   end

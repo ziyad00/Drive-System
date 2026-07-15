@@ -20,6 +20,10 @@ Rails.application.routes.draw do
       end
     end
     resources :uploads, only: %i[create show destroy]
+    get "trash" => "trash#index"
+    delete "trash" => "trash#empty"
+    post "trash/:id/restore" => "trash#restore"
+    delete "trash/:id" => "trash#destroy"
     patch "uploads/:id" => "uploads#append"
   end
 

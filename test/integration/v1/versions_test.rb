@@ -87,7 +87,7 @@ module V1
       put_file("/doc.txt", "c")
       assert_equal 3, @user.blobs.count
 
-      delete "/v1/nodes/#{node_id}", headers: @auth
+      delete "/v1/nodes/#{node_id}", params: { permanent: "true" }, headers: @auth
 
       assert_response :no_content
       assert_equal 0, @user.blobs.count
