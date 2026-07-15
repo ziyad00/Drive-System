@@ -12,7 +12,10 @@ import { DatabaseIcon, ExternalLinkIcon, MoonIcon, SunIcon } from "lucide-react"
 const MINIO_CONSOLE = import.meta.env.VITE_MINIO_CONSOLE ?? "http://localhost:9001"
 
 export default function App() {
-  const [token, setToken] = useState(() => localStorage.getItem("simple-drive-token") ?? "dev-token")
+  // The dev-token convenience default never ships in production builds.
+  const [token, setToken] = useState(
+    () => localStorage.getItem("simple-drive-token") ?? (import.meta.env.DEV ? "dev-token" : "")
+  )
   const [blobs, setBlobs] = useState<BlobMeta[]>([])
   const [backends, setBackends] = useState<BackendInfo | null>(null)
   const [error, setError] = useState<string | null>(null)

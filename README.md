@@ -150,6 +150,20 @@ The upload form includes a storage backend picker (only configured backends
 are offered) with a one-click "Make default" that saves the choice as your
 per-user default. A header toggle switches between light and dark themes.
 
+## Security notes
+
+- **Secrets live in ENV only.** Rails' `credentials.yml.enc` is intentionally
+  unused for real secrets: its master-key encryption is AES-128-GCM, below
+  the AES-256 bar this project's crypto policy sets. Keep S3/FTP credentials
+  and tokens in environment variables.
+- **The frontend is a development console.** It keeps the API token in
+  `localStorage` for convenience, which an XSS vulnerability could read
+  (none is known — React escapes by default). The `dev-token` default is
+  compiled out of production builds. If this UI ever fronts real data, keep
+  the token in memory only.
+- API tokens are stored server-side as SHA-256 digests; requests are
+  throttled per client and capped in size; FTP defaults to TLS.
+
 ## Tests
 
 ```sh
