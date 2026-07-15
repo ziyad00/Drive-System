@@ -170,6 +170,10 @@ per-user default. A header toggle switches between light and dark themes.
 bin/rails test
 ```
 
+`bin/ci` (or `ruby bin/ci` on Windows) runs the full CI pipeline locally —
+API tests plus the frontend typecheck/build — the same checks GitHub Actions
+runs on every PR, without the round-trip.
+
 Covers the API end to end (auth, round-trip, validation errors, duplicates,
 404s), each storage adapter, and the SigV4 signer. S3 tests stub HTTP with
 WebMock, so no external service is needed.
