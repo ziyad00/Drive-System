@@ -14,6 +14,7 @@ class Node < ApplicationRecord
   belongs_to :blob, optional: true
   has_many :children, class_name: "Node", foreign_key: :parent_id,
                       inverse_of: :parent, dependent: :destroy
+  has_many :file_versions, dependent: :destroy
 
   validates :kind, inclusion: { in: KINDS }
   validates :name, presence: true, unless: :root?
@@ -22,6 +23,9 @@ class Node < ApplicationRecord
   validate :parent_is_a_folder
   validate :files_have_content, if: :file?
 
+  # prepend: association dependent-destroy callbacks fire first otherwise,
+  # deleting the version rows before their blobs can be purged.
+  before_destroy :purge_version_blobs, prepend: true
   after_destroy :purge_blob
 
   def root?
@@ -72,5 +76,15 @@ class Node < ApplicationRecord
   # metadata row. Missing backend content is fine — delete is idempotent.
   def purge_blob
     BlobWriter.purge!(blob) if blob
+  end
+
+  # Each version row goes first (it holds a foreign key to its blob),
+  # then the blob's bytes and metadata.
+  def purge_version_blobs
+    file_versions.includes(:blob).each do |version|
+      blob = version.blob
+      version.destroy!
+      BlobWriter.purge!(blob)
+    end
   end
 end

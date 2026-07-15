@@ -220,7 +220,7 @@ module V1
 
       get "/v1/fs/notes.txt", headers: @auth
       assert_equal encode("second"), response.parsed_body["data"]
-      assert_equal 1, @user.blobs.count, "old content must be purged"
+      assert_equal 2, @user.blobs.count, "old content is retained as a version"
     end
 
     test "If-Match guards replacement against lost updates" do

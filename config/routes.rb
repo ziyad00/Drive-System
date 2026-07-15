@@ -15,6 +15,9 @@ Rails.application.routes.draw do
     put "files" => "files#update"
     resources :nodes, only: %i[update destroy] do
       member { post :copy }
+      resources :versions, only: %i[index destroy] do
+        member { post :restore }
+      end
     end
     resources :uploads, only: %i[create show destroy]
     patch "uploads/:id" => "uploads#append"
