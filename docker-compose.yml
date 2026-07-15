@@ -1,0 +1,162 @@
+# Development service stack. The app runs on the host; this provides every
+# service the designs depend on. All credentials are dev-only placeholders.
+#
+#   docker compose up -d                        # core stack (5 containers)
+#   docker compose --profile observability up -d
+#   docker compose --profile security up -d
+#
+# One-shot init containers create the MinIO bucket and the OpenBao transit
+# KEK, so `up -d` yields a stack the app can use immediately.
+
+name: simple-drive
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-simple_drive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: simple_drive_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-simple_drive}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: creates the blobs bucket so the s3 backend works immediately.
+  minio-init:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} &&
+      mc mb --ignore-existing local/${S3_BUCKET:-blobs}"
+
+  # Plain FTP, dev only — the FTPS-by-default adapter needs FTP_TLS=false
+  # against this server. Passive ports 21000-21010.
+  ftp:
+    image: delfer/alpine-ftp-server
+    environment:
+      USERS: "${FTP_USER:-ftpuser}|${FTP_PASSWORD:-ftppass}|/ftp/ftpuser"
+      ADDRESS: localhost
+    ports:
+      - "21:21"
+      - "21000-21010:21000-21010"
+    volumes:
+      - ftp-data:/ftp
+
+  # KMS: OpenBao dev mode (in-memory, root token). The transit engine is the
+  # envelope-encryption API the encryption design consumes: encrypt/decrypt/
+  # rewrap against a named AES-256-GCM KEK with versioned rotation.
+  openbao:
+    image: openbao/openbao
+    environment:
+      BAO_DEV_ROOT_TOKEN_ID: ${OPENBAO_ROOT_TOKEN:-dev-root-token}
+      BAO_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: [ "CMD", "bao", "status", "-address=http://127.0.0.1:8200" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: enables transit and creates the master KEK (aes256-gcm96).
+  openbao-init:
+    image: openbao/openbao
+    depends_on:
+      openbao:
+        condition: service_healthy
+    environment:
+      BAO_ADDR: http://openbao:8200
+      BAO_TOKEN: ${OPENBAO_ROOT_TOKEN:-dev-root-token}
+    entrypoint: >
+      /bin/sh -c "
+      bao secrets enable transit || true;
+      bao read transit/keys/${KMS_KEY:-simple-drive} >/dev/null 2>&1 ||
+      bao write -f transit/keys/${KMS_KEY:-simple-drive} type=aes256-gcm96"
+
+  # --- profile: observability ---
+
+  prometheus:
+    image: prom/prometheus
+    profiles: [ observability ]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana
+    profiles: [ observability ]
+    environment:
+      # Anonymous admin — dev only.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    profiles: [ observability ]
+    ports:
+      - "16686:16686" # UI
+      - "4318:4318"   # OTLP http
+
+  # --- profile: security ---
+
+  # Malware-scanning hook target for plain/SSE spaces. Heavy image, hence
+  # the profile.
+  clamav:
+    image: clamav/clamav
+    profiles: [ security ]
+    ports:
+      - "3310:3310"
+
+volumes:
+  postgres-data:
+  valkey-data:
+  minio-data:
+  ftp-data:
+  prometheus-data:
+  grafana-data:

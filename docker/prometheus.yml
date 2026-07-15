@@ -1,0 +1,18 @@
+# Dev scrape config. The app and (future) gateway run on the host, so they
+# are reached via host.docker.internal.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: [ "minio:9000" ]
+
+  - job_name: simple-drive-api
+    static_configs:
+      - targets: [ "host.docker.internal:3000" ]
+
+  - job_name: gateway
+    static_configs:
+      - targets: [ "host.docker.internal:8080" ]
