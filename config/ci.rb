@@ -25,6 +25,11 @@ CI.run do
          "osv-scanner scan source -L Gemfile.lock -L frontend/package-lock.json"
   end
 
+  if scanner_available?("trivy --version")
+    step "Security: Trivy (filesystem CVEs + IaC misconfig)",
+         "trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --quiet ."
+  end
+
   step "Build: frontend (typecheck + bundle)", "npm run build --prefix frontend"
 
   # Optional: set a green GitHub commit status to unblock PR merge.
