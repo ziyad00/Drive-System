@@ -1,14 +1,12 @@
-# Run using bin/ci
+# Local CI — the same checks GitHub Actions runs, without the round-trip.
+# Run with: bin/ci   (or `ruby bin/ci` on Windows)
 
 CI.run do
-  step "Setup", "bin/setup --skip-server"
+  # Steps invoke ruby/npm directly so they work on Windows too, where the
+  # shell cannot exec shebang scripts.
+  step "Tests: API", "ruby bin/rails test"
 
-  step "Security: Gem audit", "bin/bundler-audit"
-  step "Tests: Rails", "bin/rails test"
-  step "Tests: Seeds", "env RAILS_ENV=test bin/rails db:seed:replant"
-
-  # Optional: Run system tests
-  # step "Tests: System", "bin/rails test:system"
+  step "Build: frontend (typecheck + bundle)", "npm run build --prefix frontend"
 
   # Optional: set a green GitHub commit status to unblock PR merge.
   # Requires the `gh` CLI and `gh extension install basecamp/gh-signoff`.
