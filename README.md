@@ -106,6 +106,7 @@ variable overrides:
 | `S3_BUCKET` / `S3_REGION` | Bucket and region | region: `us-east-1` |
 | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Credentials | — |
 | `FTP_HOST` / `FTP_PORT` / `FTP_USER` / `FTP_PASSWORD` / `FTP_BASE_DIR` | FTP settings | port: `21` |
+| `FTP_TLS` | FTPS (explicit TLS); disable only for TLS-less servers | `true` |
 
 ## Running
 
