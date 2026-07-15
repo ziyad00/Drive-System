@@ -19,6 +19,12 @@ module V1
       id = params.require(:id).to_s
       data = decode_base64!(params.require(:data))
 
+      if data.bytesize > max_blob_bytes
+        return render json: {
+          error: "blob exceeds the maximum size of #{max_blob_bytes} bytes"
+        }, status: :content_too_large
+      end
+
       if Blob.exists?(blob_id: id)
         return render json: { error: "blob #{id.inspect} already exists" }, status: :conflict
       end
@@ -27,7 +33,9 @@ module V1
       adapter.store(id, data)
       blob = Blob.create!(blob_id: id, size: data.bytesize, backend: adapter.name)
 
-      render json: blob_json(blob, data), status: :created
+      # The payload is not echoed back: the client already has it, and
+      # re-encoding it would double the request's memory and bandwidth cost.
+      render json: blob_metadata_json(blob), status: :created
     end
 
     # GET /v1/blobs/:id
@@ -70,6 +78,18 @@ module V1
         size: blob.size.to_s,
         created_at: blob.created_at.utc.iso8601
       }
+    end
+
+    def blob_metadata_json(blob)
+      {
+        id: blob.blob_id,
+        size: blob.size.to_s,
+        created_at: blob.created_at.utc.iso8601
+      }
+    end
+
+    def max_blob_bytes
+      Storage.config.fetch(:max_blob_bytes)
     end
 
     def decode_base64!(value)

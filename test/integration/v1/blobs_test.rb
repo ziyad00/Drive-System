@@ -44,6 +44,35 @@ module V1
       assert_equal id, response.parsed_body["id"]
     end
 
+    test "create responds with metadata only, not the payload" do
+      id = "no-echo-#{SecureRandom.hex(4)}"
+
+      post "/v1/blobs", params: { id: id, data: HELLO }, as: :json, headers: AUTH_HEADER
+
+      assert_response :created
+      body = response.parsed_body
+      assert_equal id, body["id"]
+      assert_equal "27", body["size"]
+      assert_not_includes body.keys, "data"
+    end
+
+    test "rejects blobs larger than the configured maximum" do
+      oversized = Base64.strict_encode64("x" * (Storage.config.fetch(:max_blob_bytes) + 1))
+
+      post "/v1/blobs", params: { id: "too-big-#{SecureRandom.hex(4)}", data: oversized },
+           as: :json, headers: AUTH_HEADER
+
+      assert_response :content_too_large
+      assert_equal 0, Blob.where("blob_id LIKE 'too-big-%'").count
+    end
+
+    test "rejects oversized request bodies at the middleware layer" do
+      post "/v1/blobs", params: { id: "x", data: HELLO }, as: :json,
+           headers: AUTH_HEADER.merge("CONTENT_LENGTH" => (100.megabytes).to_s)
+
+      assert_response :content_too_large
+    end
+
     test "rejects invalid base64 data" do
       post "/v1/blobs", params: { id: "bad-data-#{SecureRandom.hex(4)}", data: "not base64!!" },
            as: :json, headers: AUTH_HEADER

@@ -14,7 +14,16 @@ module SimpleDrive
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks])
+    config.autoload_lib(ignore: %w[assets tasks middleware])
+
+    # Cap request bodies before parsing. The ceiling is the configured max
+    # decoded blob size, grown by the Base64 4/3 factor plus JSON envelope
+    # headroom, so any request that could exceed MAX_BLOB_BYTES is rejected
+    # with 413 at the middleware layer.
+    require_relative "../lib/middleware/request_size_limiter"
+    max_blob_bytes = Integer(ENV.fetch("MAX_BLOB_BYTES", 26_214_400))
+    config.middleware.insert_before ActionDispatch::ShowExceptions, RequestSizeLimiter,
+                                    max_bytes: (max_blob_bytes * 4 / 3.0).ceil + 8_192
 
     # Configuration for the application, engines, and railties goes here.
     #

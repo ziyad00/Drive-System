@@ -5,6 +5,10 @@ shared:
   # Retrieval always uses the backend recorded when the blob was stored.
   backend: <%= ENV.fetch("STORAGE_BACKEND", "local") %>
 
+  # Maximum decoded blob size in bytes. The request-size middleware derives
+  # its pre-parse ceiling from the same variable.
+  max_blob_bytes: <%= ENV.fetch("MAX_BLOB_BYTES", 26_214_400) %>
+
   local:
     path: <%= ENV.fetch("LOCAL_STORAGE_PATH", Rails.root.join("storage", "blobs")) %>
 
@@ -23,5 +27,6 @@ shared:
     base_dir: <%= ENV["FTP_BASE_DIR"] %>
 
 test:
+  max_blob_bytes: 1048576
   local:
     path: <%= Rails.root.join("tmp", "test_storage") %>

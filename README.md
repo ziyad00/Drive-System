@@ -96,6 +96,7 @@ variable overrides:
 | Variable | Meaning | Default |
 | --- | --- | --- |
 | `STORAGE_BACKEND` | System default backend: `s3`, `database`, `local` or `ftp` | `local` |
+| `MAX_BLOB_BYTES` | Maximum decoded blob size; larger requests get `413` | `26214400` (25 MB) |
 | `LOCAL_STORAGE_PATH` | Directory for the local backend | `storage/blobs` |
 | `S3_ENDPOINT` | e.g. `https://s3.amazonaws.com` or `http://localhost:9000` | — |
 | `S3_BUCKET` / `S3_REGION` | Bucket and region | region: `us-east-1` |
