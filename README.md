@@ -63,6 +63,8 @@ POST  /v1/files              {"path": "/docs/q3.pdf", "data": "<base64>",
                               "content_type": "...", "client_mtime": "...",
                               "backend": "..."}                 # parents auto-created
 GET   /v1/fs/<path>          # folder -> metadata + children; file -> metadata + data
+PUT   /v1/files              create-or-replace; honors If-Match (412 on
+                              mismatch), last-write-wins without it
 PATCH /v1/nodes/:id          {"name": ...} rename / {"parent_id": ...} move
 POST  /v1/nodes/:id/copy     {"parent_id": ..., "name": ...}    # folders copy recursively
 DELETE /v1/nodes/:id[?recursive=true]                           # purges file bytes
@@ -71,7 +73,9 @@ DELETE /v1/nodes/:id[?recursive=true]                           # purges file by
 The tree is an adjacency list, so moving a subtree of any size is one
 atomic column update, and renames/moves never touch storage — bytes are
 addressed by immutable blob ids, not paths. Sibling names are unique per
-folder; MIME types are sniffed from content when not supplied.
+folder; MIME types are sniffed from content when not supplied. File
+responses carry a strong ETag (SHA-256 of content): reads honor
+`If-None-Match` (304), replacements honor `If-Match` (412 on mismatch).
 
 ### Retrieve a blob
 

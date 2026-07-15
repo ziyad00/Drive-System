@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     get "fs(/*path)" => "fs#show", format: false, defaults: { path: "" }
     resources :folders, only: :create
     resources :files, only: :create
+    put "files" => "files#update"
     resources :nodes, only: %i[update destroy] do
       member { post :copy }
     end

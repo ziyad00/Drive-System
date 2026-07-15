@@ -59,8 +59,30 @@ module TreeNavigation
       json[:content_type] = node.content_type
       json[:client_mtime] = node.client_mtime&.utc&.iso8601
       json[:backend] = node.blob.backend
+      json[:etag] = node.blob.etag
     end
 
     json
+  end
+
+  def etag_header!(blob)
+    response.headers["ETag"] = blob.etag if blob.etag
+  end
+
+  # RFC 9110 If-Match: absent means unconditional, "*" means "resource
+  # exists", otherwise any listed ETag must equal the current one.
+  def if_match_satisfied?(blob)
+    header = request.headers["If-Match"]
+    return true if header.blank?
+    return true if header.strip == "*"
+
+    header.split(",").map(&:strip).include?(blob.etag)
+  end
+
+  def if_none_match_hit?(blob)
+    header = request.headers["If-None-Match"]
+    return false if header.blank? || blob.etag.blank?
+
+    header.strip == "*" || header.split(",").map(&:strip).include?(blob.etag)
   end
 end

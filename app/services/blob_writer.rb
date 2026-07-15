@@ -5,7 +5,8 @@
 class BlobWriter
   def self.store!(user:, blob_id:, data:, backend_name: nil)
     adapter = Storage.adapter_for(user: user, name: backend_name)
-    blob = user.blobs.create!(blob_id: blob_id, size: data.bytesize, backend: adapter.name)
+    blob = user.blobs.create!(blob_id: blob_id, size: data.bytesize, backend: adapter.name,
+                              checksum: Digest::SHA256.hexdigest(data))
 
     begin
       adapter.store(blob.storage_id, data)

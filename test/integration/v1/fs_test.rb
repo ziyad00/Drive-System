@@ -194,6 +194,67 @@ module V1
       assert_response :not_found
     end
 
+    test "file reads carry an ETag and honor If-None-Match" do
+      upload("/tagged.txt", "content v1")
+      etag = response.headers["ETag"]
+      assert_match(/\A"\h{64}"\z/, etag)
+
+      get "/v1/fs/tagged.txt", headers: @auth
+      assert_equal etag, response.headers["ETag"]
+
+      get "/v1/fs/tagged.txt", headers: @auth.merge("If-None-Match" => etag)
+      assert_response :not_modified
+
+      get "/v1/fs/tagged.txt", headers: @auth.merge("If-None-Match" => '"stale"')
+      assert_response :success
+    end
+
+    test "PUT creates when missing and replaces when present" do
+      put "/v1/files", params: { path: "/notes.txt", data: encode("first") }, as: :json, headers: @auth
+      assert_response :created
+      first_etag = response.headers["ETag"]
+
+      put "/v1/files", params: { path: "/notes.txt", data: encode("second") }, as: :json, headers: @auth
+      assert_response :ok
+      assert_not_equal first_etag, response.headers["ETag"]
+
+      get "/v1/fs/notes.txt", headers: @auth
+      assert_equal encode("second"), response.parsed_body["data"]
+      assert_equal 1, @user.blobs.count, "old content must be purged"
+    end
+
+    test "If-Match guards replacement against lost updates" do
+      put "/v1/files", params: { path: "/doc.txt", data: encode("base") }, as: :json, headers: @auth
+      etag = response.headers["ETag"]
+
+      put "/v1/files", params: { path: "/doc.txt", data: encode("mine") }, as: :json,
+          headers: @auth.merge("If-Match" => etag)
+      assert_response :ok
+
+      # A second writer still holding the old ETag loses cleanly.
+      put "/v1/files", params: { path: "/doc.txt", data: encode("theirs") }, as: :json,
+          headers: @auth.merge("If-Match" => etag)
+      assert_response :precondition_failed
+
+      get "/v1/fs/doc.txt", headers: @auth
+      assert_equal encode("mine"), response.parsed_body["data"]
+    end
+
+    test "If-Match against a missing file fails the precondition" do
+      put "/v1/files", params: { path: "/ghost.txt", data: encode("x") }, as: :json,
+          headers: @auth.merge("If-Match" => '"anything"')
+
+      assert_response :precondition_failed
+    end
+
+    test "PUT onto a folder is a conflict" do
+      post "/v1/folders", params: { path: "/dir" }, as: :json, headers: @auth
+
+      put "/v1/files", params: { path: "/dir", data: encode("x") }, as: :json, headers: @auth
+
+      assert_response :conflict
+    end
+
     test "invalid names are rejected" do
       upload("/bad", "x", path: "/..")
       assert_response :unprocessable_entity
