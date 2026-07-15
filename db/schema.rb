@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000003) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -38,6 +38,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000002) do
     t.datetime "updated_at", null: false
     t.index ["api_user_id", "blob_id"], name: "index_blobs_on_api_user_id_and_blob_id", unique: true
     t.index ["api_user_id"], name: "index_blobs_on_api_user_id"
+  end
+
+  create_table "file_versions", force: :cascade do |t|
+    t.integer "blob_id", null: false
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.integer "node_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["blob_id"], name: "index_file_versions_on_blob_id"
+    t.index ["node_id"], name: "index_file_versions_on_node_id"
   end
 
   create_table "nodes", force: :cascade do |t|
@@ -70,6 +80,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000002) do
   end
 
   add_foreign_key "blobs", "api_users"
+  add_foreign_key "file_versions", "blobs"
+  add_foreign_key "file_versions", "nodes"
   add_foreign_key "nodes", "api_users"
   add_foreign_key "nodes", "blobs"
   add_foreign_key "nodes", "nodes", column: "parent_id"

@@ -103,9 +103,10 @@ module V1
       begin
         if node
           old_blob = node.blob
+          old_type = node.content_type
           node.update!(blob: blob, content_type: resolved_type(upload, name, data),
                        client_mtime: upload.client_mtime || node.client_mtime)
-          BlobWriter.purge!(old_blob)
+          FileVersioning.record!(node, old_blob, old_type)
         else
           parent = ensure_folder_path(segments[0..-2])
           node = current_user.nodes.create!(

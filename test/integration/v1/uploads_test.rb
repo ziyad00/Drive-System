@@ -81,7 +81,7 @@ module V1
 
       get "/v1/dl/replace.bin", headers: @auth
       assert_equal "new", response.body
-      assert_equal 1, @user.blobs.count
+      assert_equal 2, @user.blobs.count, "old content is retained as a version"
     end
 
     test "aborting discards the session and staged bytes" do

@@ -72,6 +72,10 @@ PATCH /v1/uploads/:id        binary chunk at Upload-Offset (409 on mismatch);
                               the final chunk creates/replaces the file
 HEAD  /v1/uploads/:id        resume point (Upload-Offset / Upload-Length)
 DELETE /v1/uploads/:id       abort and discard staged bytes
+GET   /v1/nodes/:id/versions           version history, newest first
+POST  /v1/nodes/:id/versions/:v/restore  swap a version back in (the current
+                                       content joins the history)
+DELETE /v1/nodes/:id/versions/:v       purge one version
 PATCH /v1/nodes/:id          {"name": ...} rename / {"parent_id": ...} move
 POST  /v1/nodes/:id/copy     {"parent_id": ..., "name": ...}    # folders copy recursively
 DELETE /v1/nodes/:id[?recursive=true]                           # purges file bytes
@@ -134,6 +138,7 @@ variable overrides:
 | `STORAGE_BACKEND` | System default backend: `s3`, `database`, `local` or `ftp` | `local` |
 | `MAX_BLOB_BYTES` | Maximum decoded blob size; larger requests get `413` | `26214400` (25 MB) |
 | `RATE_LIMIT_PER_MINUTE` | Requests allowed per client (token or IP) per minute; excess gets `429` | `120` |
+| `MAX_FILE_VERSIONS` | Retained versions per file; older ones are purged | `10` |
 | `LOCAL_STORAGE_PATH` | Directory for the local backend | `storage/blobs` |
 | `S3_ENDPOINT` | e.g. `https://s3.amazonaws.com` or `http://localhost:9000` | — |
 | `S3_BUCKET` / `S3_REGION` | Bucket and region | region: `us-east-1` |

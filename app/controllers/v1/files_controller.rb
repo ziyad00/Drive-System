@@ -85,10 +85,12 @@ module V1
       end
     end
 
-    # New bytes are written before the old ones are purged, so a failed
-    # replace leaves the previous content intact.
+    # New bytes are written before the node flips over, so a failed replace
+    # leaves the previous content intact. The outgoing content is retained
+    # as a version rather than purged.
     def replace_content!(node, data)
       old_blob = node.blob
+      old_type = node.content_type
       new_blob = BlobWriter.store!(user: current_user, blob_id: "fs/#{SecureRandom.uuid}",
                                    data: data, backend_name: params[:backend].presence || old_blob.backend)
       begin
@@ -102,7 +104,7 @@ module V1
         raise
       end
 
-      BlobWriter.purge!(old_blob)
+      FileVersioning.record!(node, old_blob, old_type)
     end
 
     def resolved_content_type(name, data)
