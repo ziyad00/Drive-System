@@ -18,6 +18,10 @@ shared:
     region: <%= ENV.fetch("S3_REGION", "us-east-1") %>
     access_key_id: <%= ENV["S3_ACCESS_KEY_ID"] %>
     secret_access_key: <%= ENV["S3_SECRET_ACCESS_KEY"] %>
+    # Seconds before an unresponsive endpoint fails the request.
+    open_timeout: <%= ENV.fetch("S3_OPEN_TIMEOUT", 5) %>
+    read_timeout: <%= ENV.fetch("S3_READ_TIMEOUT", 30) %>
+    write_timeout: <%= ENV.fetch("S3_WRITE_TIMEOUT", 30) %>
 
   ftp:
     host: <%= ENV["FTP_HOST"] %>
