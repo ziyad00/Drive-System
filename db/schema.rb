@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_15_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_15_000002) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -39,5 +39,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_000001) do
     t.index ["api_user_id"], name: "index_blobs_on_api_user_id"
   end
 
+  create_table "nodes", force: :cascade do |t|
+    t.integer "api_user_id", null: false
+    t.integer "blob_id"
+    t.datetime "client_mtime"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "kind", null: false
+    t.string "name", null: false
+    t.integer "parent_id"
+    t.datetime "updated_at", null: false
+    t.index ["api_user_id", "parent_id", "name"], name: "index_nodes_on_api_user_id_and_parent_id_and_name", unique: true
+    t.index ["api_user_id"], name: "index_nodes_on_api_user_id"
+    t.index ["blob_id"], name: "index_nodes_on_blob_id"
+    t.index ["parent_id"], name: "index_nodes_on_parent_id"
+  end
+
   add_foreign_key "blobs", "api_users"
+  add_foreign_key "nodes", "api_users"
+  add_foreign_key "nodes", "blobs"
+  add_foreign_key "nodes", "nodes", column: "parent_id"
 end

@@ -6,6 +6,9 @@ module Storage
   class Error < StandardError; end
   class NotFound < Error; end
   class ConfigurationError < Error; end
+  # A backend that cannot serve a request: unknown name, or known but not
+  # configured. Carries a client-facing message.
+  class UnusableBackend < StandardError; end
 
   ADAPTERS = {
     "s3"       => "Storage::S3",
@@ -33,6 +36,23 @@ module Storage
 
     def default_backend
       config.fetch(:backend).to_s
+    end
+
+    # Resolve the adapter a write should use: the explicitly requested
+    # backend, else the user's personal default, else the system default.
+    # Raises UnusableBackend for names that are unknown or unconfigured.
+    def adapter_for(user:, name: nil)
+      name = name.presence&.to_s || user.effective_backend
+
+      unless ADAPTERS.key?(name)
+        raise UnusableBackend, "unknown backend #{name.inspect} (available: #{available_backends.join(', ')})"
+      end
+
+      begin
+        backend(name)
+      rescue ConfigurationError
+        raise UnusableBackend, "backend #{name.inspect} is not configured (available: #{available_backends.join(', ')})"
+      end
     end
 
     # Backends whose configuration is complete and can serve requests.

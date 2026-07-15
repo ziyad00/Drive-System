@@ -3,6 +3,7 @@
 # default storage backend, falling back to the system default otherwise.
 class ApiUser < ApplicationRecord
   has_many :blobs, dependent: :restrict_with_exception
+  has_many :nodes, dependent: :restrict_with_exception
 
   validates :name, presence: true
   validates :token_digest, presence: true, uniqueness: true
@@ -26,5 +27,13 @@ class ApiUser < ApplicationRecord
 
   def effective_backend
     default_backend.presence || Storage.default_backend
+  end
+
+  # The sentinel at the top of this user's file tree.
+  def root_node
+    nodes.find_or_create_by!(parent_id: nil) do |node|
+      node.kind = "folder"
+      node.name = ""
+    end
   end
 end

@@ -52,6 +52,27 @@ PUT /v1/backends/default         { "backend": "database" }   # personal default
 PUT /v1/backends/default         { "backend": null }         # back to system default
 ```
 
+### Files and folders
+
+A hierarchical namespace layered over the same storage (the flat blob API
+above stays exactly as the spec defines it):
+
+```
+POST  /v1/folders            {"path": "/docs/reports"}          # mkdir -p
+POST  /v1/files              {"path": "/docs/q3.pdf", "data": "<base64>",
+                              "content_type": "...", "client_mtime": "...",
+                              "backend": "..."}                 # parents auto-created
+GET   /v1/fs/<path>          # folder -> metadata + children; file -> metadata + data
+PATCH /v1/nodes/:id          {"name": ...} rename / {"parent_id": ...} move
+POST  /v1/nodes/:id/copy     {"parent_id": ..., "name": ...}    # folders copy recursively
+DELETE /v1/nodes/:id[?recursive=true]                           # purges file bytes
+```
+
+The tree is an adjacency list, so moving a subtree of any size is one
+atomic column update, and renames/moves never touch storage — bytes are
+addressed by immutable blob ids, not paths. Sibling names are unique per
+folder; MIME types are sniffed from content when not supplied.
+
 ### Retrieve a blob
 
 ```
