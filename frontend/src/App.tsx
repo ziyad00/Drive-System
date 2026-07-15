@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { BlobTable } from "@/components/blob-table"
-import { UploadCard } from "@/components/upload-card"
-import { ApiError, getBackends, listBlobs, type BackendInfo, type BlobMeta } from "@/lib/api"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FileBrowser } from "@/components/file-browser"
+import { TrashView } from "@/components/trash-view"
 import { useTheme } from "@/lib/theme"
 import { DatabaseIcon, ExternalLinkIcon, MoonIcon, SunIcon } from "lucide-react"
 
@@ -16,35 +16,15 @@ export default function App() {
   const [token, setToken] = useState(
     () => localStorage.getItem("simple-drive-token") ?? (import.meta.env.DEV ? "dev-token" : "")
   )
-  const [blobs, setBlobs] = useState<BlobMeta[]>([])
-  const [backends, setBackends] = useState<BackendInfo | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [refreshSignal, setRefreshSignal] = useState(0)
   const { theme, toggle } = useTheme()
 
-  const refresh = useCallback(async () => {
-    try {
-      const [blobList, backendInfo] = await Promise.all([listBlobs(token), getBackends(token)])
-      setBlobs(blobList)
-      setBackends(backendInfo)
-      setError(null)
-    } catch (err) {
-      setBlobs([])
-      setBackends(null)
-      setError(
-        err instanceof ApiError && err.status === 401
-          ? "Unauthorized — check the API token."
-          : err instanceof ApiError
-            ? err.message
-            : "Something went wrong."
-      )
-    }
-  }, [token])
+  function updateToken(next: string) {
+    setToken(next)
+    localStorage.setItem("simple-drive-token", next)
+  }
 
-  useEffect(() => {
-    localStorage.setItem("simple-drive-token", token)
-    const timer = setTimeout(refresh, 300)
-    return () => clearTimeout(timer)
-  }, [token, refresh])
+  const bump = () => setRefreshSignal((n) => n + 1)
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-8">
@@ -70,7 +50,7 @@ export default function App() {
               id="token"
               className="h-8 w-44 font-mono text-sm"
               value={token}
-              onChange={(e) => setToken(e.target.value)}
+              onChange={(e) => updateToken(e.target.value)}
             />
           </div>
           <Button
@@ -94,21 +74,18 @@ export default function App() {
 
       <Separator />
 
-      {error && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
-      <main className="grid gap-6 lg:grid-cols-[minmax(20rem,2fr)_5fr]">
-        <UploadCard
-          token={token}
-          backends={backends}
-          onStored={refresh}
-          onBackendsChange={setBackends}
-        />
-        <BlobTable token={token} blobs={blobs} />
-      </main>
+      <Tabs defaultValue="files" onValueChange={bump}>
+        <TabsList>
+          <TabsTrigger value="files">Files</TabsTrigger>
+          <TabsTrigger value="trash">Trash</TabsTrigger>
+        </TabsList>
+        <TabsContent value="files" className="pt-4">
+          <FileBrowser token={token} refreshSignal={refreshSignal} />
+        </TabsContent>
+        <TabsContent value="trash" className="pt-4">
+          <TrashView token={token} refreshSignal={refreshSignal} onRestored={bump} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
