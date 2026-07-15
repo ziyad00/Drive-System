@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_000002) do
   create_table "api_users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "default_backend"
@@ -56,8 +56,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_000001) do
     t.index ["parent_id"], name: "index_nodes_on_parent_id"
   end
 
+  create_table "uploads", force: :cascade do |t|
+    t.integer "api_user_id", null: false
+    t.string "backend"
+    t.datetime "client_mtime"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.bigint "expected_size", null: false
+    t.bigint "offset", default: 0, null: false
+    t.string "path", null: false
+    t.datetime "updated_at", null: false
+    t.index ["api_user_id"], name: "index_uploads_on_api_user_id"
+  end
+
   add_foreign_key "blobs", "api_users"
   add_foreign_key "nodes", "api_users"
   add_foreign_key "nodes", "blobs"
   add_foreign_key "nodes", "nodes", column: "parent_id"
+  add_foreign_key "uploads", "api_users"
 end

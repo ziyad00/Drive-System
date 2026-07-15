@@ -4,6 +4,7 @@
 class ApiUser < ApplicationRecord
   has_many :blobs, dependent: :restrict_with_exception
   has_many :nodes, dependent: :restrict_with_exception
+  has_many :uploads, dependent: :destroy
 
   validates :name, presence: true
   validates :token_digest, presence: true, uniqueness: true

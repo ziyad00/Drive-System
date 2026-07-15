@@ -16,6 +16,8 @@ Rails.application.routes.draw do
     resources :nodes, only: %i[update destroy] do
       member { post :copy }
     end
+    resources :uploads, only: %i[create show destroy]
+    patch "uploads/:id" => "uploads#append"
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -67,6 +67,11 @@ PUT   /v1/files              create-or-replace; honors If-Match (412 on
                               mismatch), last-write-wins without it
 GET   /v1/dl/<path>          raw binary download; Range/If-Range partial
                               reads (206), ?disposition=attachment
+POST  /v1/uploads            {"path", "size", ...} start a resumable upload
+PATCH /v1/uploads/:id        binary chunk at Upload-Offset (409 on mismatch);
+                              the final chunk creates/replaces the file
+HEAD  /v1/uploads/:id        resume point (Upload-Offset / Upload-Length)
+DELETE /v1/uploads/:id       abort and discard staged bytes
 PATCH /v1/nodes/:id          {"name": ...} rename / {"parent_id": ...} move
 POST  /v1/nodes/:id/copy     {"parent_id": ..., "name": ...}    # folders copy recursively
 DELETE /v1/nodes/:id[?recursive=true]                           # purges file bytes
