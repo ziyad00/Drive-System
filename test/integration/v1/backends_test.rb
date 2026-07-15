@@ -37,8 +37,9 @@ module V1
       post "/v1/blobs", params: { id: id, data: HELLO }, as: :json, headers: @auth
 
       assert_response :created
-      assert BlobContent.exists?(blob_id: id)
-      assert_equal "database", Blob.find_by(blob_id: id).backend
+      blob = Blob.find_by(blob_id: id)
+      assert_equal "database", blob.backend
+      assert BlobContent.exists?(blob_id: blob.storage_id)
     end
 
     test "clearing the personal default falls back to the system default" do
@@ -66,8 +67,9 @@ module V1
       post "/v1/blobs", params: { id: id, data: HELLO, backend: "local" }, as: :json, headers: @auth
 
       assert_response :created
-      assert_equal "local", Blob.find_by(blob_id: id).backend
-      assert_not BlobContent.exists?(blob_id: id)
+      blob = Blob.find_by(blob_id: id)
+      assert_equal "local", blob.backend
+      assert_not BlobContent.exists?(blob_id: blob.storage_id)
     end
   end
 end
