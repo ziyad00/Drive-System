@@ -16,6 +16,15 @@ module Storage
       assert BlobContent.exists?(blob_id: id)
     end
 
+    test "delete removes the row and is idempotent" do
+      id = "db-gone-#{SecureRandom.hex(4)}"
+      @adapter.store(id, "payload")
+      @adapter.delete(id)
+
+      assert_not BlobContent.exists?(blob_id: id)
+      assert_nothing_raised { @adapter.delete(id) }
+    end
+
     test "raises NotFound for unknown ids" do
       assert_raises(Storage::NotFound) { @adapter.retrieve("missing") }
     end

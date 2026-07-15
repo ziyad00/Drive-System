@@ -46,6 +46,13 @@ module Storage
       end
     end
 
+    def delete(id)
+      response = request(Net::HTTP::Delete, key_for(id))
+      return if response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPNotFound)
+
+      raise Error, "S3 delete failed: #{response.code} #{response.message} — #{response.body&.truncate(200)}"
+    end
+
     private
 
     # Every request runs under explicit timeouts so a stalled endpoint

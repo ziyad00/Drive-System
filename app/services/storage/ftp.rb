@@ -36,6 +36,14 @@ module Storage
       raise NotFound, "no FTP file for blob #{id.inspect}"
     end
 
+    def delete(id)
+      connect do |ftp|
+        ftp.delete(key_for(id))
+      rescue Net::FTPPermError
+        # already gone — delete is idempotent
+      end
+    end
+
     private
 
     def connect

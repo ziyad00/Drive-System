@@ -49,6 +49,17 @@ module Storage
       assert_raises(Storage::Error) { @adapter.store("my-id", "payload") }
     end
 
+    test "deletes objects and treats missing ones as already deleted" do
+      stub_request(:delete, "http://minio.test:9000/blobs/#{@key}").to_return(status: 204)
+      assert_nothing_raised { @adapter.delete("my-id") }
+
+      stub_request(:delete, "http://minio.test:9000/blobs/#{@key}").to_return(status: 404)
+      assert_nothing_raised { @adapter.delete("my-id") }
+
+      stub_request(:delete, "http://minio.test:9000/blobs/#{@key}").to_return(status: 403, body: "denied")
+      assert_raises(Storage::Error) { @adapter.delete("my-id") }
+    end
+
     test "maps timeouts to Storage::Error" do
       stub_request(:get, "http://minio.test:9000/blobs/#{@key}").to_timeout
 
