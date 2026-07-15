@@ -194,6 +194,42 @@ module V1
       assert_equal data_b, response.parsed_body["data"]
     end
 
+    test "the database index arbitrates duplicate ids even when validation is bypassed" do
+      user = api_users(:tester)
+      id = "race-#{SecureRandom.hex(4)}"
+      user.blobs.create!(blob_id: id, size: 1, backend: "local")
+
+      row = { api_user_id: user.id, blob_id: id, size: 1, backend: "local",
+              created_at: Time.current, updated_at: Time.current }
+
+      assert_raises(ActiveRecord::RecordNotUnique) { Blob.insert_all!([ row ]) }
+    end
+
+    test "a failed backend write leaves no metadata behind" do
+      id = "orphan-#{SecureRandom.hex(4)}"
+
+      failing_adapter = Class.new(Storage::Local) {
+        def name = "local"
+
+        def store(*)
+          raise Storage::Error, "backend exploded"
+        end
+      }.new(path: Rails.root.join("tmp", "test_storage").to_s)
+
+      begin
+        Storage.send(:adapters)["local"] = failing_adapter
+        post "/v1/blobs", params: { id: id, data: HELLO }, as: :json, headers: AUTH_HEADER
+      ensure
+        Storage.reset!
+      end
+
+      assert_response :bad_gateway
+      assert_not Blob.exists?(blob_id: id)
+
+      post "/v1/blobs", params: { id: id, data: HELLO }, as: :json, headers: AUTH_HEADER
+      assert_response :created
+    end
+
     test "returns 404 for unknown blobs" do
       get "/v1/blobs/never-stored-#{SecureRandom.hex(4)}", headers: AUTH_HEADER
 

@@ -25,14 +25,18 @@ module V1
         }, status: :content_too_large
       end
 
-      if current_user.blobs.exists?(blob_id: id)
-        return render json: { error: "blob #{id.inspect} already exists" }, status: :conflict
-      end
-
+      # Metadata first: the unique index arbitrates concurrent same-id
+      # requests atomically, so bytes are only written once ownership of the
+      # id is secured — no orphaned backend writes from duplicate races.
       adapter = requested_adapter
-      blob = current_user.blobs.build(blob_id: id, size: data.bytesize, backend: adapter.name)
-      adapter.store(blob.storage_id, data)
-      blob.save!
+      blob = current_user.blobs.create!(blob_id: id, size: data.bytesize, backend: adapter.name)
+
+      begin
+        adapter.store(blob.storage_id, data)
+      rescue StandardError
+        blob.destroy
+        raise
+      end
 
       # The payload is not echoed back: the client already has it, and
       # re-encoding it would double the request's memory and bandwidth cost.
@@ -109,8 +113,28 @@ module V1
       render json: { error: "missing required field: #{error.param}" }, status: :bad_request
     end
 
+    # rescue_from dispatches in reverse registration order, so the generic
+    # Storage::Error handler is registered before its NotFound subclass.
+    rescue_from Storage::Error do |error|
+      render json: { error: "storage backend failure: #{error.message}" }, status: :bad_gateway
+    end
+
     rescue_from Storage::NotFound do
       render json: { error: "blob content not found in storage backend" }, status: :not_found
+    end
+
+    # Losing the duplicate-id race at the database index (both requests
+    # passed validation) is the same client error as any duplicate.
+    rescue_from ActiveRecord::RecordNotUnique do
+      render json: { error: "blob already exists" }, status: :conflict
+    end
+
+    rescue_from ActiveRecord::RecordInvalid do |error|
+      if error.record.errors.of_kind?(:blob_id, :taken)
+        render json: { error: "blob #{error.record.blob_id.inspect} already exists" }, status: :conflict
+      else
+        render json: { error: error.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
+      end
     end
   end
 end
