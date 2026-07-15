@@ -17,6 +17,13 @@ module Storage
       raise NotImplementedError, "#{self.class}#retrieve"
     end
 
+    # Remove the bytes stored under +id+. Idempotent: deleting something
+    # that does not exist is a no-op, so callers can retry compensation
+    # paths safely.
+    def delete(id)
+      raise NotImplementedError, "#{self.class}#delete"
+    end
+
     def name
       self.class.name.demodulize.underscore
     end

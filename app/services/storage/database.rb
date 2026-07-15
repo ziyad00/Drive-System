@@ -12,5 +12,9 @@ module Storage
 
       content.payload
     end
+
+    def delete(id)
+      BlobContent.where(blob_id: id).delete_all
+    end
   end
 end

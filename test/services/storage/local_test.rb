@@ -39,6 +39,14 @@ module Storage
       assert_equal "second", @adapter.retrieve("rewrite")
     end
 
+    test "delete removes the file and is idempotent" do
+      @adapter.store("gone", "payload")
+      @adapter.delete("gone")
+
+      assert_raises(Storage::NotFound) { @adapter.retrieve("gone") }
+      assert_nothing_raised { @adapter.delete("gone") }
+    end
+
     test "raises NotFound for unknown ids" do
       assert_raises(Storage::NotFound) { @adapter.retrieve("missing") }
     end

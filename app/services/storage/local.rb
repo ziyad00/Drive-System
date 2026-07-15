@@ -33,6 +33,11 @@ module Storage
       File.binread(path)
     end
 
+    def delete(id)
+      path = path_for(id)
+      File.delete(path) if File.file?(path)
+    end
+
     private
 
     def path_for(id)
