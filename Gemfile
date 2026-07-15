@@ -27,6 +27,9 @@ group :development, :test do
 
   # Audits gems for known security defects (use config/bundler-audit.yml to ignore issues)
   gem "bundler-audit", require: false
+
+  # Rails-aware static security analysis (SQLi, XSS, mass assignment, ...)
+  gem "brakeman", require: false
 end
 
 group :test do

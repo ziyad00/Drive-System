@@ -1,0 +1,10 @@
+# gitleaks configuration. Suppressions live here, in review-able form —
+# never as untracked local flags.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "dev-token is the documented development-convenience token seeded by db:seed, not a secret; README shows it in example curl commands"
+regexTarget = "line"
+regexes = ['''Bearer dev-token''']
