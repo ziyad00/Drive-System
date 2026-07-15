@@ -24,7 +24,7 @@ module V1
         render json: node_json(node).merge(permission: access.permission,
                                            children: children.map { |c| node_json(c) })
       else
-        data = Storage.backend(node.blob.backend).retrieve(node.blob.storage_id)
+        data = BlobWriter.read(node.blob)
         node.blob.backfill_checksum!(data)
         etag_header!(node.blob)
         render json: node_json(node).merge(permission: access.permission,

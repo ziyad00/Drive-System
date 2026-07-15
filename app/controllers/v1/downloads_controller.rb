@@ -14,7 +14,7 @@ module V1
       return render json: { error: "no such path" }, status: :not_found unless node
       return render json: { error: "#{node.path} is a folder" }, status: :bad_request if node.folder?
 
-      data = Storage.backend(node.blob.backend).retrieve(node.blob.storage_id)
+      data = BlobWriter.read(node.blob)
       node.blob.backfill_checksum!(data)
       etag_header!(node.blob)
       response.headers["Accept-Ranges"] = "bytes"
