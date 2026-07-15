@@ -25,6 +25,9 @@ shared:
     user: <%= ENV["FTP_USER"] %>
     password: <%= ENV["FTP_PASSWORD"] %>
     base_dir: <%= ENV["FTP_BASE_DIR"] %>
+    # FTPS (explicit TLS). Set FTP_TLS=false only for servers without TLS,
+    # accepting that credentials and content then travel in cleartext.
+    tls: <%= ENV.fetch("FTP_TLS", "true") %>
 
 test:
   max_blob_bytes: 1048576

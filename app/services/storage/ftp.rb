@@ -3,6 +3,10 @@ require "net/ftp"
 module Storage
   # Bonus backend: stores blobs on an FTP server. Files are named by the
   # SHA-256 of the blob id inside a configurable base directory.
+  #
+  # Connections use FTPS (explicit TLS) by default so credentials and blob
+  # bytes never cross the network in cleartext; plain FTP must be opted
+  # into for servers that cannot speak TLS.
   class Ftp < Base
     def initialize(config = {})
       super
@@ -13,6 +17,7 @@ module Storage
       @user = config[:user]
       @password = config[:password]
       @base_dir = config[:base_dir].presence
+      @tls = ActiveModel::Type::Boolean.new.cast(config.fetch(:tls, true))
     end
 
     def store(id, data)
@@ -34,7 +39,10 @@ module Storage
     private
 
     def connect
-      Net::FTP.open(@host, port: @port, username: @user, password: @password) do |ftp|
+      options = { port: @port, username: @user, password: @password }
+      options[:ssl] = true if @tls
+
+      Net::FTP.open(@host, **options) do |ftp|
         ftp.binary = true
         if @base_dir
           ensure_base_dir(ftp)
