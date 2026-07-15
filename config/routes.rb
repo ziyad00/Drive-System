@@ -9,6 +9,7 @@ Rails.application.routes.draw do
 
     # File tree: path-based reads, id-based mutations.
     get "fs(/*path)" => "fs#show", format: false, defaults: { path: "" }
+    get "dl/*path" => "downloads#show", format: false
     resources :folders, only: :create
     resources :files, only: :create
     put "files" => "files#update"

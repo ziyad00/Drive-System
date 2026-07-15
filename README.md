@@ -65,6 +65,8 @@ POST  /v1/files              {"path": "/docs/q3.pdf", "data": "<base64>",
 GET   /v1/fs/<path>          # folder -> metadata + children; file -> metadata + data
 PUT   /v1/files              create-or-replace; honors If-Match (412 on
                               mismatch), last-write-wins without it
+GET   /v1/dl/<path>          raw binary download; Range/If-Range partial
+                              reads (206), ?disposition=attachment
 PATCH /v1/nodes/:id          {"name": ...} rename / {"parent_id": ...} move
 POST  /v1/nodes/:id/copy     {"parent_id": ..., "name": ...}    # folders copy recursively
 DELETE /v1/nodes/:id[?recursive=true]                           # purges file bytes
