@@ -26,6 +26,12 @@ Rails.application.routes.draw do
     put "identity" => "identity#update"
     get "users/:name/identity" => "identity#lookup"
     get "keylog" => "key_log#index"
+    resources :groups, only: %i[create show] do
+      post "members" => "groups#add_member"
+      delete "members/:user" => "groups#remove_member", constraints: { user: /[^\/]+/ }
+      post "commits" => "groups#commit"
+      get "commits" => "groups#commits"
+    end
     # Shared content, addressed under the grant.
     get "shared(/*path)" => "shared#show", format: false, defaults: { path: "" }
     put "shared/*path" => "shared#update", format: false
